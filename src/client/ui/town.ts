@@ -1,5 +1,4 @@
-import { CAPTURE_COST_PER_LEVEL, MAX_TOWN_LEVEL, UPGRADE_COST_PER_LEVEL } from '../../engine';
-import type { Action, Player, Town } from '../../engine';
+import { CAPTURE_COST_PER_LEVEL, MAX_TOWN_LEVEL, UPGRADE_COST_PER_LEVEL, type Action, type Player, type Town } from '../../engine';
 
 export function renderTown(me: Player, town: Town | undefined, act: (a: Action) => void): HTMLElement {
   const root = document.createElement('div');

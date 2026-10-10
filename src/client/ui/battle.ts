@@ -1,7 +1,6 @@
-import { CLASSES, ITEMS, getMonster, type Action, type Player, type Stats } from '../../engine';
+import { CLASSES, ITEMS, getMonster, type Action, type GameEvent, type Player, type Stats } from '../../engine';
 import type { PublicGameState } from '../../shared/protocol';
 import { describeEvents } from './log';
-import type { GameEvent } from '../../engine';
 
 function bar(label: string, hp: number, max: number): HTMLElement {
   const wrap = document.createElement('div');
@@ -19,7 +18,6 @@ function bar(label: string, hp: number, max: number): HTMLElement {
 }
 
 function portrait(seed: string): HTMLElement {
-  // art.ts is created in parallel; draw a coloured box instead.
   const box = document.createElement('div');
   box.className = 'portrait';
   let h = 0;

@@ -1,6 +1,5 @@
-import type { GameEvent } from '../../engine';
+import { ITEMS, type GameEvent } from '../../engine';
 import type { PublicGameState } from '../../shared/protocol';
-import { ITEMS } from '../../engine';
 
 const MAX_LOG = 50;
 

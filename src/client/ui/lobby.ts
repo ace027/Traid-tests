@@ -1,7 +1,5 @@
-import { CLASSES, MAX_PLAYERS, MIN_PLAYERS } from '../../engine';
-import type { ClassId } from '../../engine';
-import type { ClientMessage } from '../../shared/protocol';
-import { MAX_NAME_LENGTH } from '../../shared/protocol';
+import { CLASSES, MAX_PLAYERS, MIN_PLAYERS, type ClassId } from '../../engine';
+import { MAX_NAME_LENGTH, type ClientMessage } from '../../shared/protocol';
 import type { Store } from '../store';
 
 type Send = (m: ClientMessage) => void;
