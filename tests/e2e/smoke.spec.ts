@@ -117,7 +117,7 @@ test('two tabs play a full game to game-over and agree on the winner', async ({ 
     await expect(p.locator('.ranking')).toBeVisible();
   }
   const bannerA = (await a.locator('.winner-banner').textContent())!.trim();
-  expect(bannerA).toMatch(/wins!|Game over/);
+  expect(bannerA).toMatch(/wins!|share the win!|Game over/);
   await expect(b.locator('.winner-banner')).toHaveText(bannerA);
 
   await ctxA.close();
