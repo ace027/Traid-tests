@@ -228,4 +228,49 @@ describe('websocket protocol', () => {
       expect(o.inbox.some((m) => m.t === 'state')).toBe(false);
     }
   });
+
+  it('non-host start returns an error and does not start the game', async () => {
+    const [, b] = await setupRoom();
+    b.send({ t: 'start' });
+    const e = await b.next('error');
+    expect(e.message).toMatch(/host/i);
+  });
+
+  it('join after start returns Game already started', async () => {
+    const [a, b, c] = await setupRoom();
+    a.send({ t: 'start' });
+    for (const cl of [a, b, c]) await cl.next('state');
+    const late = await connect();
+    late.send({ t: 'join', code: a.code, name: 'Late', classId: 'knight' });
+    const e = await late.next('error');
+    expect(e.message).toBe('Game already started');
+  });
+
+  it('setClass broadcasts an updated lobby to everyone', async () => {
+    const [a, b, c] = await setupRoom();
+    b.send({ t: 'setClass', classId: 'cleric' });
+    for (const cl of [a, b, c]) {
+      const lobby = await cl.next(
+        'lobby',
+        (m) => m.seats.find((s: any) => s.playerId === b.playerId)?.classId === 'cleric',
+      );
+      expect(lobby.seats).toHaveLength(3);
+    }
+  });
+
+  it('setClass and town actions without a room or in the wrong phase error cleanly', async () => {
+    const lone = await connect();
+    lone.send({ t: 'setClass', classId: 'mage' });
+    expect((await lone.next('error')).message).toBe('Not in a room');
+    const [a, b, c] = await setupRoom();
+    a.send({ t: 'start' });
+    for (const cl of [a, b, c]) await cl.next('state');
+    const s = a.lastState!;
+    const actor = [a, b, c].find((cl) => cl.playerId === s.players[s.turnIndex].id)!;
+    actor.send({ t: 'action', action: { type: 'captureTown' } });
+    const e = await actor.next('error');
+    expect(typeof e.message).toBe('string');
+    actor.send({ t: 'ping' });
+    await actor.next('pong');
+  });
 });

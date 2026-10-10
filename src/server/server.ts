@@ -5,7 +5,7 @@ import type { RawData } from 'ws';
 import { MAX_MESSAGE_BYTES, parseClientMessage, publicState } from '../shared/protocol';
 import type { ClientMessage, ServerMessage } from '../shared/protocol';
 import { RoomManager } from './rooms';
-import type { Room } from './rooms';
+import type { Room, Seat } from './rooms';
 
 export const PING_INTERVAL_MS = 30_000;
 export const SWEEP_INTERVAL_MS = 60_000;
@@ -28,6 +28,7 @@ interface Session {
 export async function startServer(opts: StartOptions): Promise<RunningServer> {
   const rooms = new RoomManager();
   const sessions = new Map<WebSocket, Session>();
+  const roomSockets = new Map<string, Set<WebSocket>>();
   const alive = new WeakMap<WebSocket, boolean>();
 
   const wss = opts.httpServer
@@ -55,9 +56,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
   }
 
   function socketsOf(code: string): WebSocket[] {
-    const out: WebSocket[] = [];
-    for (const [ws, s] of sessions) if (s.code === code) out.push(ws);
-    return out;
+    return [...(roomSockets.get(code) ?? [])];
   }
 
   function broadcastLobby(code: string): void {
@@ -74,9 +73,10 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
 
   function bind(ws: WebSocket, code: string, playerId: string): void {
     // Latest wins: close any other socket holding this seat.
-    for (const [other, s] of sessions) {
-      if (other !== ws && s.code === code && s.playerId === playerId) {
-        sessions.delete(other);
+    for (const other of socketsOf(code)) {
+      const s = sessions.get(other);
+      if (other !== ws && s && s.playerId === playerId) {
+        unlink(other);
         try {
           other.close(4000, 'Replaced by a newer connection');
         } catch {
@@ -85,6 +85,32 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
       }
     }
     sessions.set(ws, { code, playerId });
+    let set = roomSockets.get(code);
+    if (!set) roomSockets.set(code, (set = new Set()));
+    set.add(ws);
+  }
+
+  function unlink(ws: WebSocket): Session | undefined {
+    const session = sessions.get(ws);
+    if (!session) return undefined;
+    sessions.delete(ws);
+    const set = roomSockets.get(session.code);
+    if (set) {
+      set.delete(ws);
+      if (set.size === 0) roomSockets.delete(session.code);
+    }
+    return session;
+  }
+
+  function seatAndAnnounce(ws: WebSocket, r: { room: Room; seat: Seat } | { error: string }): boolean {
+    if ('error' in r) {
+      send(ws, { t: 'error', message: r.error });
+      return false;
+    }
+    bind(ws, r.room.code, r.seat.playerId);
+    send(ws, { t: 'joined', code: r.room.code, token: r.seat.token, playerId: r.seat.playerId });
+    broadcastLobby(r.room.code);
+    return true;
   }
 
   function handle(ws: WebSocket, msg: ClientMessage): void {
@@ -95,20 +121,12 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
         return;
       case 'create': {
         if (session) return send(ws, { t: 'error', message: 'Already in a room' });
-        const r = rooms.create(msg.name, msg.classId);
-        if ('error' in r) return send(ws, { t: 'error', message: r.error });
-        bind(ws, r.room.code, r.seat.playerId);
-        send(ws, { t: 'joined', code: r.room.code, token: r.seat.token, playerId: r.seat.playerId });
-        broadcastLobby(r.room.code);
+        seatAndAnnounce(ws, rooms.create(msg.name, msg.classId));
         return;
       }
       case 'join': {
         if (session) return send(ws, { t: 'error', message: 'Already in a room' });
-        const r = rooms.join(msg.code, msg.name, msg.classId);
-        if ('error' in r) return send(ws, { t: 'error', message: r.error });
-        bind(ws, r.room.code, r.seat.playerId);
-        send(ws, { t: 'joined', code: r.room.code, token: r.seat.token, playerId: r.seat.playerId });
-        broadcastLobby(r.room.code);
+        seatAndAnnounce(ws, rooms.join(msg.code, msg.name, msg.classId));
         return;
       }
       case 'rejoin': {
@@ -117,9 +135,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
         if (session && (session.code !== r.room.code || session.playerId !== r.seat.playerId)) {
           detach(ws);
         }
-        bind(ws, r.room.code, r.seat.playerId);
-        send(ws, { t: 'joined', code: r.room.code, token: r.seat.token, playerId: r.seat.playerId });
-        broadcastLobby(r.room.code);
+        if (!seatAndAnnounce(ws, r)) return;
         if (r.room.state) send(ws, { t: 'state', state: publicState(r.room.state), events: [] });
         return;
       }
@@ -151,9 +167,8 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
   }
 
   function detach(ws: WebSocket): void {
-    const session = sessions.get(ws);
+    const session = unlink(ws);
     if (!session) return;
-    sessions.delete(ws);
     rooms.disconnect(session.code, session.playerId);
     broadcastLobby(session.code);
   }
@@ -169,7 +184,8 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
         if (!msg) return send(ws, { t: 'error', message: 'Invalid message' });
         handle(ws, msg);
       } catch (e) {
-        send(ws, { t: 'error', message: e instanceof Error ? e.message : 'Internal error' });
+        console.error('Unhandled error while handling message', e);
+        send(ws, { t: 'error', message: 'Internal error' });
       }
     });
     ws.on('error', () => {
@@ -215,6 +231,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
       for (const ws of wss.clients) ws.terminate();
       await new Promise<void>((resolve) => wss.close(() => resolve()));
       sessions.clear();
+      roomSockets.clear();
     },
   };
 }
