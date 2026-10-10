@@ -34,9 +34,9 @@ function showGame() {
   banner.textContent = 'Reconnecting to server...';
   banner.setAttribute('role', 'status');
   store.subscribe((s) => {
-    banner.hidden = s.connection === 'open';
+    banner.hidden = s.connection === 'open' || isReplaced(s);
   });
-  banner.hidden = store.get().connection === 'open';
+  banner.hidden = store.get().connection === 'open' || isReplaced(store.get());
   app!.append(canvas, hud, banner);
   mountBoard(canvas, store);
   mountHud(hud, store, send);

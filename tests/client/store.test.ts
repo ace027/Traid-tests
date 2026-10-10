@@ -113,4 +113,12 @@ describe('net', () => {
     expect(onReconnect).toHaveBeenCalledTimes(1);
     box.remove();
   });
+
+  it('replaced state survives send attempts', () => {
+    const store = createStore();
+    const c = connect(store, 'ws://x', factory);
+    FakeSocket.last.onclose?.({ code: 4000 });
+    expect(c.send({ t: 'ping' } as never)).toBe(false);
+    expect(isReplaced(store.get())).toBe(true);
+  });
 });

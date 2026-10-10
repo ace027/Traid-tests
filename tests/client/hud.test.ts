@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createGame, shopStock, ITEMS, type GameState } from '../../src/engine';
 import { publicState, type PublicGameState } from '../../src/shared/protocol';
 import { createStore, type Store } from '../../src/client/store';
+import { isReplaced, REPLACED_MESSAGE } from '../../src/client/net';
 import { mountHud } from '../../src/client/ui/hud';
 
 let root: HTMLElement;
@@ -149,6 +150,68 @@ describe('hud', () => {
   });
 });
 
+describe('hud inventory gate', () => {
+  const toggle = () => find('Inventory') as HTMLButtonElement;
+  const box = () => root.querySelector('.hud-inventory') as HTMLElement;
+  const onKind = (kind: 'shop' | 'town') => (s: GameState): GameState => {
+    const t = Object.values(s.tiles).find((x) => x.kind === kind)!;
+    return { ...s, players: s.players.map((p) => (p.id === 'p1' ? { ...p, tileId: t.id } : p)) };
+  };
+
+  it('is hidden for a waiting player even after toggling', () => {
+    show((s) => ({ ...s, phase: 'roll', turnIndex: 0 }), 'p2');
+    expect(toggle().hidden).toBe(true);
+    expect(box().hidden).toBe(true);
+    toggle().click();
+    expect(toggle().hidden).toBe(true);
+    expect(box().hidden).toBe(true);
+    expect(box().children.length).toBe(0);
+  });
+
+  it('is hidden for the current player during battle', () => {
+    show((s) => ({
+      ...s,
+      phase: 'battle',
+      turnIndex: 0,
+      battle: { attackerId: 'p1', defender: { kind: 'player', id: 'p2' }, round: 1 },
+    }));
+    expect(toggle().hidden).toBe(true);
+    expect(box().hidden).toBe(true);
+  });
+
+  it('is hidden for the current player while choosing a path', () => {
+    show((s) => ({ ...s, phase: 'choose-path', turnIndex: 0, pendingMoves: 1 }));
+    expect(toggle().hidden).toBe(true);
+    expect(box().hidden).toBe(true);
+  });
+
+  it('is hidden for the current player at game over', () => {
+    show((s) => ({ ...s, phase: 'game-over', turnIndex: 0, winnerId: 'p1' }));
+    expect(toggle().hidden).toBe(true);
+    expect(box().hidden).toBe(true);
+  });
+
+  it.each([
+    ['roll', (s: GameState): GameState => ({ ...s, phase: 'roll', turnIndex: 0 })],
+    ['shop', (s: GameState): GameState => ({ ...onKind('shop')(s), phase: 'shop', turnIndex: 0 })],
+    [
+      'town',
+      (s: GameState): GameState => {
+        const moved = onKind('town')(s);
+        const id = moved.players[0].tileId;
+        return { ...moved, phase: 'town', turnIndex: 0, towns: { ...moved.towns, [id]: { tileId: id, ownerId: null, level: 1, income: 10 } as never } };
+      },
+    ],
+    ['end-turn', (s: GameState): GameState => ({ ...s, phase: 'end-turn', turnIndex: 0 })],
+  ])('shows the toggle for the current player in %s and opens the panel', (_phase, patch) => {
+    show(patch);
+    expect(toggle().hidden).toBe(false);
+    expect(box().hidden).toBe(true);
+    toggle().click();
+    expect(box().hidden).toBe(false);
+  });
+});
+
 describe('hud error toast', () => {
   it('shows store.error in an alert and hides it once cleared', () => {
     const alert = () => root.querySelector('[role="alert"]') as HTMLElement;
@@ -173,6 +236,18 @@ describe('hud error toast', () => {
       expect(store.get().error).toBeNull();
       expect(alert().hidden).toBe(true);
       expect(alert().textContent).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('never expires the replaced error', () => {
+    vi.useFakeTimers();
+    try {
+      store.set({ connection: 'closed', error: REPLACED_MESSAGE });
+      vi.advanceTimersByTime(10000);
+      expect(store.get().error).toBe(REPLACED_MESSAGE);
+      expect(isReplaced(store.get())).toBe(true);
     } finally {
       vi.useRealTimers();
     }

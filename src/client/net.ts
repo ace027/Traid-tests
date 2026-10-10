@@ -61,7 +61,7 @@ export function connect(store: Store, url?: string, factory?: SocketFactory): Co
       ws.send(JSON.stringify(m));
       return true;
     }
-    store.set({ error: 'Not connected' });
+    if (!isReplaced(store.get())) store.set({ error: 'Not connected' });
     return false;
   };
 

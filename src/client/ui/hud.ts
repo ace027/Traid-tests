@@ -1,6 +1,7 @@
 import { CLASSES, computeScore, stepsAvailable, type Action } from '../../engine';
 import type { ClientMessage, PublicGameState } from '../../shared/protocol';
 import { setPathHandler } from '../render/board';
+import { REPLACED_MESSAGE } from '../net';
 import type { Store } from '../store';
 import { renderBattle } from './battle';
 import { renderGameOver } from './gameover';
@@ -135,10 +136,12 @@ export function mountHud(root: HTMLElement, store: Store, send: (m: ClientMessag
 
   function render(): void {
     const s = store.get();
-    toast.textContent = s.error ?? '';
-    toast.hidden = !s.error;
-    if (s.error !== toastFor) {
-      toastFor = s.error ?? null;
+    // The replaced state is terminal and shown by its own notice; never toast or expire it.
+    const transient = s.error === REPLACED_MESSAGE ? null : s.error;
+    toast.textContent = transient ?? '';
+    toast.hidden = !transient;
+    if (transient !== toastFor) {
+      toastFor = transient ?? null;
       if (toastTimer) clearTimeout(toastTimer);
       toastTimer = null;
       if (toastFor) {
