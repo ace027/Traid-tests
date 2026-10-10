@@ -2,8 +2,8 @@
 
 ## Current Position
 - **Phase**: 3 of 4 (executed, pending review)
-- **Status**: Phase 3 under review — cycle 2/3, 0 blocker(s) remaining
-- **Last Activity**: Phase 3 review cycle 2 (2026-10-10)
+- **Status**: Phase 3 review escalated — 1 unresolved finding(s) (0 blocker/critical) after 3 cycles
+- **Last Activity**: Phase 3 review (2026-10-10)
 
 ## Progress
 ```
@@ -17,7 +17,7 @@
 - Max 4 players, no bots in v1
 
 ## Next Action
-Run `/triad:review` to verify Phase 3: Browser client
+Fix the unresolved findings in 03-REVIEW.md, accept the phase as is, or re-plan; then run `/triad:review --phase 3`
 
 ## Phase 1 Results
 (build started 2026-10-10)

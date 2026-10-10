@@ -26,3 +26,7 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-017 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-02 | engineering-frontend-developer | implementation | success | 2 | browser-client, engineering | Board renderer, dice and movement animation: Complete |
 | O-018 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-03 | engineering-frontend-developer | implementation | success | 2 | browser-client, engineering | HUD: turn controls, battle, shop, inventory, towns, log, game over: Complete |
 | O-019 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-04 | testing-qa-verification-specialist | quality-review | success | 2 | browser-client, testing | Two-tab browser smoke test and dev run script: Complete |
+| O-020 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-00 | testing-qa-verification-specialist | quality-review | partial | 4 | review, testing | Phase 3 review ESCALATED in 3 cycle(s), 17 finding(s) |
+| O-021 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-00 | engineering-senior-developer | quality-review | partial | 5 | review, engineering | Phase 3 review ESCALATED in 3 cycle(s), 17 finding(s) |
+| O-022 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-00 | engineering-frontend-developer | quality-review | partial | 5 | review, engineering | Phase 3 review ESCALATED in 3 cycle(s), 17 finding(s) |
+| O-023 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-00 | testing-api-tester | quality-review | partial | 5 | review, testing | Phase 3 review ESCALATED in 3 cycle(s), 17 finding(s) |
