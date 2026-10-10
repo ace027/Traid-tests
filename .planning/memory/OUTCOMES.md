@@ -18,3 +18,4 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-009 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 2 | 02-02 | engineering-backend-architect | implementation | failed | 5 | multiplayer-server-and-lobby, engineering | Wire protocol and room manager: Partial |
 | O-010 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 2 | 02-01 | engineering-backend-architect | implementation | success | 2 | multiplayer-server-and-lobby, engineering | Town upgrades and capture, PvP item theft, boss bonus: Complete |
 | O-011 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 2 | 02-02 | engineering-backend-architect | implementation | success | 2 | multiplayer-server-and-lobby, engineering | Wire protocol and room manager: Complete |
+| O-012 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 2 | 02-03 | engineering-backend-architect | implementation | success | 2 | multiplayer-server-and-lobby, engineering | WebSocket server and multi-client protocol tests: Complete |
