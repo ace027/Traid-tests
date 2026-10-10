@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Position
-- **Phase**: 3 of 4 (planned)
-- **Status**: Phase 3 planned -- 4 plans across 3 waves
-- **Last Activity**: Phase 3 planning (2026-10-10)
+- **Phase**: 3 of 4 (executing)
+- **Status**: Phase 3 executing — Plan 03-01 complete
+- **Last Activity**: Plan 03-01 execution (2026-10-10)
 
 ## Progress
 ```
-[##########..........] 53% — 7/13 plans complete
+[############........] 61% — 8/13 plans complete
 ```
 
 ## Recent Decisions
@@ -33,3 +33,7 @@ Run `/triad:build` to execute Phase 3: Browser client
 - Plan 02-01 (Wave 1): Town upgrades and capture, PvP item theft, boss bonus — Complete
 - Plan 02-02 (Wave 1): Wire protocol and room manager — Complete
 - Plan 02-03 (Wave 2): WebSocket server and multi-client protocol tests — Complete
+
+## Phase 3 Results
+(build started 2026-10-10)
+- Plan 03-01 (Wave 1): Vite app shell, networking, store and lobby — Complete
