@@ -61,6 +61,17 @@ describe('renderBattle', () => {
     expect(btns(el).length).toBe(0);
   });
 
+  it('unknown monster id shows Unknown foe with a valid HP label', () => {
+    const s: PublicGameState = {
+      ...publicState(game()),
+      phase: 'battle',
+      battle: { attackerId: 'p1', defender: { kind: 'monster', id: 'nope' }, round: 1, monsterHp: 5 },
+    } as PublicGameState;
+    const text = renderBattle(s, me(s), [], () => {}).textContent ?? '';
+    expect(text).toContain('Unknown foe');
+    expect(text).toContain('HP 5/5');
+    expect(text).not.toMatch(/NaN|undefined/);
+  });
   it('renders round events and returns empty root without a battle', () => {
     const s = pvp();
     const el = renderBattle(s, me(s), [{ type: 'defend', playerId: 'p2' } as never], vi.fn());
@@ -171,10 +182,32 @@ describe('renderInventory', () => {
 
 describe('renderGameOver', () => {
   it('names the winner and ranks every player', () => {
-    const s = { ...publicState(game()), phase: 'game-over', winnerId: 'p2' } as PublicGameState;
+    const base = publicState(game());
+    const s = {
+      ...base,
+      players: base.players.map((p) => (p.id === 'p2' ? { ...p, gold: p.gold + 100 } : p)),
+      phase: 'game-over',
+      winnerId: 'p2',
+    } as PublicGameState;
     const el = renderGameOver(s);
     expect(el.querySelector('.winner-banner')!.textContent).toBe('Bob wins!');
     expect(el.querySelectorAll('.ranking li').length).toBe(2);
+  });
+  it('shows a shared win for tied top scores', () => {
+    const s = { ...publicState(game()), phase: 'game-over', winnerId: 'p1' } as PublicGameState;
+    expect(renderGameOver(s).querySelector('.winner-banner')!.textContent).toBe('Ann and Bob share the win!');
+  });
+  it('Back to lobby clears the session and reloads', () => {
+    sessionStorage.setItem('rr.code', 'ABCD');
+    sessionStorage.setItem('rr.token', 't');
+    const reload = vi.fn();
+    vi.stubGlobal('location', { ...window.location, reload });
+    const s = { ...publicState(game()), phase: 'game-over', winnerId: 'p1' } as PublicGameState;
+    byText(renderGameOver(s), 'Back to lobby')!.click();
+    expect(sessionStorage.getItem('rr.code')).toBeNull();
+    expect(sessionStorage.getItem('rr.token')).toBeNull();
+    expect(reload).toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
   it('falls back to Game over without a winner', () => {
     const s = { ...publicState(game()), phase: 'game-over', winnerId: null } as PublicGameState;
