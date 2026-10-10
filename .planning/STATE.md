@@ -45,3 +45,6 @@ All phases complete — project review finished!
 (build started 2026-10-10)
 - Plan 04-01 (Wave 1): Production server, offline-turn takeover, finished-room expiry — Complete
 - Plan 04-02 (Wave 1): Back to lobby, art portraits in combat, README — Complete
+
+## Milestones
+- Milestone 1: v1 Playable — Complete (2026-10-10)

@@ -45,6 +45,14 @@
 - [ ] npm start runs server and client
 **Plans**: 2
 
+## Milestones
+
+### Milestone 1: v1 Playable
+- **Phases**: 1-4
+- **Goal**: A complete browser board-game RPG that friends can play online with room codes: rules engine, multiplayer server, browser client and one-command run.
+- **Status**: Complete
+- **Completed**: 2026-10-10
+
 ## Progress
 
 | Phase | Plans | Completed | Status |
