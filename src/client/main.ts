@@ -12,6 +12,7 @@ const send = conn.send;
 
 let inGame = false;
 let unmountLobby: (() => void) | null = null;
+let unsubGame: (() => void) | null = null;
 
 function showLobby() {
   app!.textContent = '';
@@ -33,7 +34,8 @@ function showGame() {
   banner.className = 'banner';
   banner.textContent = 'Reconnecting to server...';
   banner.setAttribute('role', 'status');
-  store.subscribe((s) => {
+  unsubGame?.();
+  unsubGame = store.subscribe((s) => {
     banner.hidden = s.connection === 'open' || isReplaced(s);
   });
   banner.hidden = store.get().connection === 'open' || isReplaced(store.get());

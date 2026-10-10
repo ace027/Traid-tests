@@ -30,5 +30,3 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .seat-on { color: var(--ok); }
 .error { color: var(--danger); min-height: 1.2em; }
 .banner { position: fixed; top: 0; left: 0; right: 0; padding: 8px; text-align: center; background: var(--danger); color: #fff; z-index: 100; }
-.hud { position: fixed; inset: 0; pointer-events: none; }
-.hud > * { pointer-events: auto; }

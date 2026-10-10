@@ -1,4 +1,4 @@
-import { CLASSES } from '../../engine';
+import { CLASSES, MAX_PLAYERS, MIN_PLAYERS } from '../../engine';
 import type { ClassId } from '../../engine';
 import type { ClientMessage } from '../../shared/protocol';
 import { MAX_NAME_LENGTH } from '../../shared/protocol';
@@ -150,7 +150,7 @@ export function mountLobby(root: HTMLElement, store: Store, send: Send): () => v
     if (me && roomClass.value !== me.classId) roomClass.value = me.classId;
     const isHost = lobby.hostId === s.playerId;
     startBtn.hidden = !isHost;
-    startBtn.disabled = lobby.seats.length < 2 || lobby.seats.length > 4;
+    startBtn.disabled = lobby.seats.length < MIN_PLAYERS || lobby.seats.length > MAX_PLAYERS;
   };
 
   const unsub = store.subscribe(render);

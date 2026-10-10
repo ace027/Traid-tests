@@ -26,7 +26,9 @@ export function renderShop(me: Player, act: (a: Action) => void): HTMLElement {
     span.textContent = `${item.name} - ${item.price}g ${modText(item)}`.trim();
     const buy = document.createElement('button');
     buy.textContent = 'Buy';
+    buy.setAttribute('aria-label', `Buy ${item.name}`);
     buy.disabled = item.price > me.gold;
+    if (buy.disabled) buy.title = `Need ${item.price}g`;
     buy.addEventListener('click', () => act({ type: 'buy', itemId: item.id }));
     li.append(span, buy);
     ul.append(li);
@@ -44,6 +46,7 @@ export function renderShop(me: Player, act: (a: Action) => void): HTMLElement {
       span.textContent = `${item.name} - ${sellPrice(id)}g`;
       const sell = document.createElement('button');
       sell.textContent = 'Sell';
+      sell.setAttribute('aria-label', `Sell ${item.name}`);
       sell.addEventListener('click', () => act({ type: 'sell', itemId: id }));
       li.append(span, sell);
       sl.append(li);
