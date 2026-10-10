@@ -1,9 +1,9 @@
 # Project State
 
 ## Current Position
-- **Phase**: 1 of 4 (complete)
-- **Status**: Phase 1 complete — review passed (3 cycle(s))
-- **Last Activity**: Phase 1 review (2026-10-10)
+- **Phase**: 2 of 4 (planned)
+- **Status**: Phase 2 planned -- 3 plans across 2 waves
+- **Last Activity**: Phase 2 planning (2026-10-10)
 
 ## Progress
 ```
@@ -17,7 +17,7 @@
 - Max 4 players, no bots in v1
 
 ## Next Action
-Run `/triad:plan 2` to plan Phase 2: Multiplayer server and lobby
+Run `/triad:build` to execute Phase 2: Multiplayer server and lobby
 
 ## Phase 1 Results
 (build started 2026-10-10)
