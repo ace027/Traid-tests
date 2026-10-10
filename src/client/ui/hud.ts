@@ -1,6 +1,6 @@
 import { CLASSES, computeScore, stepsAvailable, type Action } from '../../engine';
 import type { ClientMessage, PublicGameState } from '../../shared/protocol';
-import * as board from '../render/board';
+import { setPathHandler } from '../render/board';
 import type { Store } from '../store';
 import { renderBattle } from './battle';
 import { renderGameOver } from './gameover';
@@ -24,6 +24,8 @@ export function mountHud(root: HTMLElement, store: Store, send: (m: ClientMessag
   const ctx = div('hud-context panel');
   const logBox = div('hud-log panel');
   const logList = div('log-list', 'ul');
+  logList.setAttribute('role', 'log');
+  logList.setAttribute('aria-live', 'polite');
   logBox.append(logList);
   const invBox = div('hud-inventory panel');
   const invToggle = document.createElement('button');
@@ -33,13 +35,14 @@ export function mountHud(root: HTMLElement, store: Store, send: (m: ClientMessag
     invOpen = !invOpen;
     render();
   });
-  root.append(top, side, ctx, logBox, invToggle, invBox);
+  const toast = div('toast', 'p');
+  toast.setAttribute('role', 'alert');
+  toast.hidden = true;
+  top.setAttribute('role', 'status');
+  top.setAttribute('aria-live', 'polite');
+  root.append(toast, top, side, ctx, logBox, invToggle, invBox);
 
-  // Board (plan 03-02) exposes setPathHandler; tolerate its absence.
-  const setPathHandler = (board as Record<string, unknown>).setPathHandler as
-    | ((fn: ((tileId: string) => void) | null) => void)
-    | undefined;
-  setPathHandler?.((tileId: string) => act({ type: 'choosePath', tileId }));
+  setPathHandler((tileId: string) => act({ type: 'choosePath', tileId }));
 
   function context(state: PublicGameState, myId: string | null): HTMLElement[] {
     const me = state.players.find((p) => p.id === myId);
@@ -75,9 +78,16 @@ export function mountHud(root: HTMLElement, store: Store, send: (m: ClientMessag
         const p = div('prompt', 'p');
         p.textContent = 'Choose a highlighted tile';
         out.push(p);
+        const list = document.createElement('ol');
+        list.className = 'path-targets';
+        list.setAttribute('aria-label', 'Available destinations');
         for (const id of stepsAvailable(state as never, me.id)) {
-          out.push(button(`Go to ${id}`, { type: 'choosePath', tileId: id }));
+          const li = document.createElement('li');
+          const kind = state.tiles[id]?.kind;
+          li.append(button(kind ? `Go to ${id} (${kind})` : `Go to ${id}`, { type: 'choosePath', tileId: id }));
+          list.append(li);
         }
+        out.push(list);
         break;
       }
       case 'shop':
@@ -100,6 +110,8 @@ export function mountHud(root: HTMLElement, store: Store, send: (m: ClientMessag
 
   function render(): void {
     const s = store.get();
+    toast.textContent = s.error ?? '';
+    toast.hidden = !s.error;
     const state = s.state;
     if (!state) return;
     const me = state.players.find((p) => p.id === s.playerId);

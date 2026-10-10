@@ -21,6 +21,14 @@
 .winner-banner { color: var(--accent); text-align: center; }
 .notice { color: var(--danger); }
 @media (max-width: 800px) {
-  .hud { grid-template-columns: 1fr; grid-template-rows: auto auto auto auto auto; }
-  .hud > * { grid-column: 1 !important; grid-row: auto !important; }
+  /* Row 2 is an empty spacer that keeps the board canvas visible and clickable;
+     panels stack below it and the HUD scrolls when they overflow. */
+  .hud { grid-template-columns: 1fr; grid-template-rows: auto minmax(45vh, 1fr) repeat(4, auto); overflow-y: auto; overscroll-behavior: contain; }
+  .hud > .hud-top, .hud > .hud-side, .hud > .hud-context, .hud > .hud-log, .hud > .hud-inventory, .hud > button { grid-column: 1; }
+  .hud > .hud-top { grid-row: 1; }
+  .hud > .hud-side { grid-row: 3; }
+  .hud > .hud-context { grid-row: 4; max-height: none; }
+  .hud > .hud-log { grid-row: 5; max-height: none; }
+  .hud > .hud-inventory { grid-row: 6; }
+  .hud > button { grid-row: 7; justify-self: stretch; }
 }

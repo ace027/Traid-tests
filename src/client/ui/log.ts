@@ -68,6 +68,8 @@ export function renderLog(
   events: GameEvent[],
 ): void {
   const lines = [...state.log, ...describeEvents(state, events).filter((l) => !state.log.includes(l))].slice(-MAX_LOG);
+  list.setAttribute('role', 'log');
+  list.setAttribute('aria-live', 'polite');
   list.textContent = '';
   for (const line of lines) {
     const li = document.createElement('li');

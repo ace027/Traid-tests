@@ -66,6 +66,8 @@ export function renderBattle(
   if (lines.length) {
     const ul = document.createElement('ul');
     ul.className = 'round-events';
+    ul.setAttribute('role', 'log');
+    ul.setAttribute('aria-live', 'polite');
     for (const l of lines) {
       const li = document.createElement('li');
       li.textContent = l;

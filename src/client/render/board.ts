@@ -67,6 +67,21 @@ export function pathTargets(s: ClientState): string[] {
   return [...(g.tiles[me.tileId]?.next ?? [])];
 }
 
+/** Text alternative for the canvas: current turn, position and available destinations. */
+function describeBoard(s: ClientState, targets: string[]): string {
+  const g = s.state;
+  if (!g) return 'Game board';
+  const cur = g.players[g.turnIndex];
+  const me = g.players.find((p) => p.id === s.playerId);
+  let text = `Game board. Week ${g.week}, day ${g.day}.`;
+  if (me) text += ` You are on tile ${me.tileId} (${g.tiles[me.tileId]?.kind ?? 'unknown'}).`;
+  if (cur) text += ` ${cur.id === s.playerId ? 'Your turn' : `${cur.name}'s turn`}.`;
+  if (targets.length) {
+    text += ` Choose a destination: ${targets.map((id) => `${id} (${g.tiles[id]?.kind ?? 'unknown'})`).join(', ')}.`;
+  }
+  return text;
+}
+
 /** Shortest forward route from `from` to `to` (excluding `from`), or null. */
 function route(tiles: Record<string, Tile>, from: string, to: string, maxDepth = 12): string[] | null {
   if (from === to) return [];
@@ -212,6 +227,7 @@ export function mountBoard(canvas: HTMLCanvasElement, store: Store): void {
       lastState = g;
     }
     targets = pathTargets(s);
+    canvas.setAttribute('aria-label', describeBoard(s, targets));
     kick();
   }
 

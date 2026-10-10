@@ -108,4 +108,57 @@ describe('hud', () => {
     show((s) => ({ ...s, phase: 'game-over', winnerId: 'p2' }), 'p1');
     expect(root.querySelector('.winner-banner')!.textContent).toContain('Bob');
   });
+
+  it('renders store errors in a role=alert element and clears them on next state', () => {
+    show((s) => ({ ...s, phase: 'roll', turnIndex: 0 }));
+    store.set({ error: 'Not enough gold' });
+    const alert = root.querySelector('[role="alert"]')!;
+    expect(alert.textContent).toBe('Not enough gold');
+    store.set({ error: null });
+    expect(root.querySelector('[role="alert"]')!.textContent).toBe('');
+  });
+
+  it('has live regions for turn indicator and log', () => {
+    show((s) => ({ ...s, phase: 'roll', turnIndex: 0 }));
+    expect(root.querySelector('.hud-top')!.getAttribute('aria-live')).toBe('polite');
+    expect(root.querySelector('.log-list')!.getAttribute('role')).toBe('log');
+  });
+
+  it('choose-path lists destinations as buttons that send choosePath', () => {
+    show((s) => {
+      const from = s.tiles[s.players[0].tileId];
+      return { ...s, phase: 'choose-path', turnIndex: 0, pendingMoves: 1, players: s.players.map((p, i) => (i === 0 ? { ...p, tileId: from.id } : p)) };
+    });
+    const go = buttons().filter((b) => /^Go to /.test(b.textContent ?? ''));
+    expect(go.length).toBeGreaterThan(0);
+    expect(root.querySelector('ol.path-targets')).not.toBeNull();
+    go[0].click();
+    expect(send.mock.calls.some((c) => c[0].action?.type === 'choosePath')).toBe(true);
+  });
+
+  it('battle round events container is a live log', () => {
+    const state = publicState({
+      ...base(),
+      phase: 'battle',
+      battle: { attackerId: 'p1', defender: { kind: 'player', id: 'p2' }, round: 1 },
+    });
+    store.set({ playerId: 'p1', state, lastEvents: [{ type: 'defend', playerId: 'p1' }] });
+    const ul = root.querySelector('.round-events')!;
+    expect(ul.getAttribute('role')).toBe('log');
+    expect(ul.getAttribute('aria-live')).toBe('polite');
+  });
+});
+
+describe('hud error toast', () => {
+  it('shows store.error in an alert and hides it once cleared', () => {
+    const alert = () => root.querySelector('[role="alert"]') as HTMLElement;
+    expect(alert().hidden).toBe(true);
+    store.set({ error: 'Not enough gold' });
+    expect(alert().hidden).toBe(false);
+    expect(alert().textContent).toBe('Not enough gold');
+    show((s) => ({ ...s, phase: 'roll', turnIndex: 0 }));
+    store.set({ error: null });
+    expect(alert().hidden).toBe(true);
+    expect(alert().textContent).toBe('');
+  });
 });
