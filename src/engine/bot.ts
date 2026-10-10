@@ -1,5 +1,6 @@
 import type { Action, GameState, Player } from './types';
 import { createRng, nextFloat } from './rng';
+import { CAPTURE_COST_PER_LEVEL, MAX_TOWN_LEVEL, UPGRADE_COST_PER_LEVEL } from './movement';
 import { ITEMS, shopStock } from './data/items';
 
 /** Local generator seeded from the state; never advances state.rngState. */
@@ -64,6 +65,19 @@ export function chooseBotAction(state: GameState, playerId: string): Action {
       }
       if (pick) return { type: 'buy', itemId: pick };
       return { type: 'leaveShop' };
+    }
+    case 'town': {
+      const town = state.towns[player.tileId];
+      if (town) {
+        if (town.ownerId === player.id) {
+          const cost = UPGRADE_COST_PER_LEVEL * town.level;
+          if (town.level < MAX_TOWN_LEVEL && player.gold >= cost + 100) return { type: 'upgradeTown' };
+        } else if (town.ownerId !== null) {
+          const cost = CAPTURE_COST_PER_LEVEL * town.level;
+          if (player.gold >= cost + 150) return { type: 'captureTown' };
+        }
+      }
+      return { type: 'leaveTown' };
     }
     default:
       return { type: 'endTurn' };

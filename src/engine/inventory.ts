@@ -1,4 +1,5 @@
 import type { GameState, Player, Slot, Stats } from './types';
+import { getStartTileId } from './calendar';
 import { ITEMS, shopStock } from './data/items';
 import { CLASSES } from './data/classes';
 
@@ -124,11 +125,6 @@ export function equipItem(state: GameState, playerId: string, itemId: string): I
   return { state: next };
 }
 
-function startTileId(state: GameState): string {
-  const t = Object.values(state.tiles).find((tile) => tile.kind === 'start');
-  return t ? t.id : 'start';
-}
-
 /**
  * Apply a consumable to a player inside an already-cloned state (mutates `next`).
  * Returns an error string on rejection. Exposed for combat's 'item' action.
@@ -161,7 +157,7 @@ export function applyConsumable(next: GameState, playerId: string, itemId: strin
     }
     case 'warp': {
       if (next.phase === 'battle') return 'Cannot warp during battle';
-      p.tileId = startTileId(next);
+      p.tileId = getStartTileId(next.tiles);
       next.log.push(`${p.name} used ${item.name} and warped to the start`);
       break;
     }

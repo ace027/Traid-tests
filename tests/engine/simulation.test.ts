@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, createGame } from '../../src/engine/game';
+import { determineWinner } from '../../src/engine/calendar';
 import { chooseBotAction } from '../../src/engine/bot';
 import { BOSS_ID } from '../../src/engine/data/monsters';
 import type { ClassId, GameEvent, GameState } from '../../src/engine/types';
@@ -68,7 +69,7 @@ describe('headless bot simulation', () => {
         const defeated = events.filter((e) => e.type === 'boss-defeated');
         expect(defeated).toHaveLength(1);
         expect(state.week).toBeLessThanOrEqual(4);
-        expect(state.winnerId).toBe(defeated[0].playerId);
+        expect(state.winnerId).toBe(determineWinner(state));
       }
     }
   });

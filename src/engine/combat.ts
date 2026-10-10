@@ -2,6 +2,7 @@ import type { Action, GameEvent, GameState, Player, Stats } from './types';
 import { nextFloat } from './rng';
 import { CLASSES } from './data/classes';
 import { BOSS_ID, getMonster, monsterXp } from './data/monsters';
+import { advanceTurn } from './calendar';
 import { applyConsumable } from './inventory';
 
 export type BattleAction = Extract<Action, { type: 'battleAction' }>;
@@ -19,6 +20,7 @@ export const PVP_WIN_GOLD_RATE = 0.2;
 export const PVP_LOSS_GOLD_RATE = 0.3;
 export const MONSTER_LOSS_GOLD_RATE = 0.2;
 export const BASE_DROP_CHANCE = 0.25;
+export const BOSS_BONUS_GOLD = 500;
 
 function clone(state: GameState): GameState {
   return JSON.parse(JSON.stringify(state)) as GameState;
@@ -304,10 +306,10 @@ function finishBattle(
       }
       events.push(...grantXp(actor, xp));
       if (m.id === BOSS_ID) {
-        next.phase = 'game-over';
-        next.winnerId = actor.id;
+        actor.gold += BOSS_BONUS_GOLD;
         events.push({ type: 'boss-defeated', playerId: actor.id });
-        next.log.push(`${actor.name} has slain the ${m.name}!`);
+        next.log.push(`${actor.name} has slain the ${m.name}! (+${BOSS_BONUS_GOLD} gold)`);
+        Object.assign(next, advanceTurn(next, { bossDefeated: true }));
       }
     } else {
       const lost = Math.floor(actor.gold * MONSTER_LOSS_GOLD_RATE);
@@ -332,4 +334,21 @@ function finishBattle(
   events.push({ type: 'battle-end', result: actorWon ? 'win' : 'loss', winnerId: winner.id, loserId: loser.id, gold: transfer, goldLost: lost, xp });
   next.log.push(`${winner.name} defeats ${loser.name} and takes ${transfer} gold`);
   events.push(...grantXp(winner, xp));
+
+  // Theft: one random non-equipped item (one copy of each equipped id is reserved).
+  const reserved = Object.values(loser.equipment).filter((x): x is string => !!x);
+  const candidates: number[] = [];
+  const skip = [...reserved];
+  loser.inventory.forEach((id, i) => {
+    const k = skip.indexOf(id);
+    if (k >= 0) skip.splice(k, 1);
+    else candidates.push(i);
+  });
+  if (candidates.length > 0) {
+    const idx = candidates[Math.floor(roll() * candidates.length)];
+    const [itemId] = loser.inventory.splice(idx, 1);
+    winner.inventory.push(itemId);
+    events.push({ type: 'item-stolen', from: loser.id, to: winner.id, itemId });
+    next.log.push(`${winner.name} steals ${itemId} from ${loser.name}`);
+  }
 }

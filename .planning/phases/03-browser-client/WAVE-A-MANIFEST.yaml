@@ -1,0 +1,29 @@
+wave: A
+phase: 3
+status: complete
+timestamp: "2026-10-10T16:56:14Z"
+service_groups:
+  mixed:
+    status: complete
+    plans: [03-01]
+    files: [index.html, package-lock.json, package.json, src/client/main.ts, src/client/net.ts, src/client/render/board.ts, src/client/store.ts, src/client/styles.css, src/client/ui/hud.ts, src/client/ui/lobby.ts, src/client/views.ts, tests/client/lobby.test.ts, tests/client/store.test.ts, tsconfig.json, vite.config.ts]
+  frontend:
+    status: complete
+    plans: [03-02, 03-03]
+    files: [src/client/render/animate.ts, src/client/render/art.ts, src/client/render/board.ts, tests/client/board.test.ts, src/client/ui/battle.ts, src/client/ui/gameover.ts, src/client/ui/hud.css, src/client/ui/hud.ts, src/client/ui/inventory.ts, src/client/ui/log.ts, src/client/ui/shop.ts, src/client/ui/town.ts, tests/client/hud.test.ts]
+  default:
+    status: complete
+    plans: [03-04]
+    files: [package-lock.json, package.json, playwright.config.ts, scripts/dev.mjs, tests/e2e/smoke.spec.ts]
+analysis_findings:
+  count: 8
+  by_agent:
+    engineering-backend-architect: {blockers: 0, warnings: 8}
+    engineering-security-engineer: {blockers: 0, warnings: 0}
+outputs:
+  total_files: 29
+  total_plans: 4
+  passed: 4
+  failed: 0
+gate: architecture
+gate_status: passed

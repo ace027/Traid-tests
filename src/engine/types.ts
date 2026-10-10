@@ -64,6 +64,7 @@ export interface Player {
 export interface Town {
   tileId: string;
   ownerId: string | null;
+  /** 1..3 */
   level: number;
   income: number;
 }
@@ -74,6 +75,7 @@ export type Phase =
   | 'tile-resolve'
   | 'battle'
   | 'shop'
+  | 'town'
   | 'end-turn'
   | 'game-over';
 
@@ -113,6 +115,9 @@ export type Action =
   | { type: 'useItem'; itemId: string }
   | { type: 'equip'; itemId: string }
   | { type: 'leaveShop' }
+  | { type: 'upgradeTown' }
+  | { type: 'captureTown' }
+  | { type: 'leaveTown' }
   | { type: 'endTurn' };
 
 export type GameEvent = { type: string; [k: string]: unknown };

@@ -164,6 +164,27 @@ describe('monster battles', () => {
     expect(state.winnerId).toBe('a');
   });
 
+  it('boss kill gives +500 gold; winner is top scorer, not necessarily the slayer', () => {
+    const slayer = makePlayer('a', 'knight', { stats: { ...CLASSES.knight.base, atk: 5000 }, gold: 0 });
+    const rich = makePlayer('b', 'mage', { gold: 2000 });
+    const s0 = startMonsterBattle(makeState([slayer, rich]), 'a', BOSS_ID);
+    const { state, events } = resolveBattleAction(s0, ATTACK);
+    expect(p(state, 'a').gold).toBeGreaterThanOrEqual(500);
+    expect(events.some((e) => e.type === 'boss-defeated')).toBe(true);
+    expect(state.phase).toBe('game-over');
+    expect(state.winnerId).toBe('b');
+  });
+
+  it('boss slain on the last day of week 4 still ends with a winner', () => {
+    const slayer = makePlayer('a', 'knight', { stats: { ...CLASSES.knight.base, atk: 5000 } });
+    const other = makePlayer('b', 'mage', { gold: 10 });
+    const base = makeState([slayer, other]);
+    const s0 = startMonsterBattle({ ...base, week: 4, day: 7 }, 'a', BOSS_ID);
+    const { state } = resolveBattleAction(s0, ATTACK);
+    expect(state.phase).toBe('game-over');
+    expect(state.winnerId).toBe('a');
+  });
+
   it('is deterministic for a fixed seed and does not mutate input', () => {
     const s0 = startMonsterBattle(makeState([makePlayer('a', 'rogue')], 99), 'a', 'burrow-rat');
     const snapshot = JSON.stringify(s0);
@@ -234,4 +255,32 @@ describe('tier-1 balance', () => {
       expect(rate).toBeLessThanOrEqual(0.95);
     });
   }
+});
+
+describe('pvp item theft', () => {
+  const duel = (loser: Partial<Player>) => {
+    const a = makePlayer('a', 'knight', { stats: { ...CLASSES.knight.base, atk: 999 } });
+    const b = makePlayer('b', 'mage', loser);
+    return resolveBattleAction(startPlayerBattle(makeState([a, b]), 'a', 'b'), ATTACK);
+  };
+
+  it('moves exactly one non-equipped item to the winner', () => {
+    const { state, events } = duel({
+      inventory: ['potion', 'potion', 'iron-sword'],
+      equipment: { weapon: 'iron-sword' },
+    });
+    expect(p(state, 'b').inventory).toHaveLength(2);
+    expect(p(state, 'a').inventory).toEqual(['potion']);
+    expect(p(state, 'b').inventory).toContain('iron-sword');
+    const ev = events.filter((e) => e.type === 'item-stolen');
+    expect(ev).toEqual([{ type: 'item-stolen', from: 'b', to: 'a', itemId: 'potion' }]);
+  });
+
+  it('steals nothing when loser has no items or only equipped ones', () => {
+    for (const loser of [{}, { inventory: ['iron-sword'], equipment: { weapon: 'iron-sword' } }]) {
+      const { state, events } = duel(loser);
+      expect(p(state, 'a').inventory).toEqual([]);
+      expect(events.some((e) => e.type === 'item-stolen')).toBe(false);
+    }
+  });
 });
