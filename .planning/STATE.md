@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Position
-- **Phase**: 4 of 4 (planned)
-- **Status**: Phase 4 planned -- 2 plans across 1 waves
-- **Last Activity**: Phase 4 planning (2026-10-10)
+- **Phase**: 4 of 4 (executing)
+- **Status**: Phase 4 executing — Plan 04-02 complete
+- **Last Activity**: Plan 04-02 execution (2026-10-10)
 
 ## Progress
 ```
-[################....] 84% — 11/13 plans complete
+[####################] 100% — 13/13 plans complete
 ```
 
 ## Recent Decisions
@@ -40,3 +40,8 @@ Run `/triad:build` to execute Phase 4: Polish and playtest
 - Plan 03-02 (Wave 2): Board renderer, dice and movement animation — Complete
 - Plan 03-03 (Wave 2): HUD: turn controls, battle, shop, inventory, towns, log, game over — Complete
 - Plan 03-04 (Wave 3): Two-tab browser smoke test and dev run script — Complete
+
+## Phase 4 Results
+(build started 2026-10-10)
+- Plan 04-01 (Wave 1): Production server, offline-turn takeover, finished-room expiry — Complete
+- Plan 04-02 (Wave 1): Back to lobby, art portraits in combat, README — Complete
