@@ -2,9 +2,14 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 import { chooseBotAction } from '../../src/engine/bot';
 import type { GameState } from '../../src/engine';
-import type { ServerMessage } from '../../src/shared/protocol';
+import type { PublicGameState, ServerMessage } from '../../src/shared/protocol';
 import { startServer } from '../../src/server/server';
 import type { RunningServer } from '../../src/server/server';
+
+/** Test-side stand-in: clients never receive seed/rngState; the bot only needs some local entropy. */
+function withRng(s: PublicGameState): GameState {
+  return { ...s, seed: 0, rngState: s.log.length } as GameState;
+}
 
 class Client {
   ws: WebSocket;
@@ -12,7 +17,7 @@ class Client {
   playerId = '';
   token = '';
   code = '';
-  lastState: GameState | null = null;
+  lastState: PublicGameState | null = null;
   private waiters: Array<() => void> = [];
 
   constructor(url: string) {
@@ -110,6 +115,8 @@ describe('websocket protocol', () => {
       await cl.next('lobby', (m) => m.seats.length === 3);
       const st = await cl.next('state');
       expect(st.state.players).toHaveLength(3);
+      expect(st.state).not.toHaveProperty('seed');
+      expect(st.state).not.toHaveProperty('rngState');
     }
   });
 
@@ -137,7 +144,7 @@ describe('websocket protocol', () => {
           return done();
         }
         try {
-          cl.send({ t: 'action', action: chooseBotAction(s, cl.playerId) });
+          cl.send({ t: 'action', action: chooseBotAction(withRng(s), cl.playerId) });
         } catch (e) {
           failure = e as Error;
           done();
@@ -172,7 +179,7 @@ describe('websocket protocol', () => {
     expect(joined.playerId).toBe(playerId);
     const st = await again.next('state');
     expect(st.state.players[st.state.turnIndex].id).toBe(playerId);
-    again.send({ t: 'action', action: chooseBotAction(st.state, playerId) });
+    again.send({ t: 'action', action: chooseBotAction(withRng(st.state), playerId) });
     const after = await watcher.next('state', (m) => m.events.length > 0);
     expect(after.events.length).toBeGreaterThan(0);
   });

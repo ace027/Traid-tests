@@ -2,7 +2,7 @@ import type { GameEvent } from '../engine';
 import type { Server as HttpServer } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { RawData } from 'ws';
-import { MAX_MESSAGE_BYTES, parseClientMessage } from '../shared/protocol';
+import { MAX_MESSAGE_BYTES, parseClientMessage, publicState } from '../shared/protocol';
 import type { ClientMessage, ServerMessage } from '../shared/protocol';
 import { RoomManager } from './rooms';
 import type { Room } from './rooms';
@@ -68,7 +68,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
 
   function broadcastState(room: Room, events: GameEvent[]): void {
     if (!room.state) return;
-    const msg: ServerMessage = { t: 'state', state: room.state, events };
+    const msg: ServerMessage = { t: 'state', state: publicState(room.state), events };
     for (const ws of socketsOf(room.code)) send(ws, msg);
   }
 
@@ -120,7 +120,7 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
         bind(ws, r.room.code, r.seat.playerId);
         send(ws, { t: 'joined', code: r.room.code, token: r.seat.token, playerId: r.seat.playerId });
         broadcastLobby(r.room.code);
-        if (r.room.state) send(ws, { t: 'state', state: r.room.state, events: [] });
+        if (r.room.state) send(ws, { t: 'state', state: publicState(r.room.state), events: [] });
         return;
       }
       case 'setClass': {
