@@ -49,7 +49,7 @@
 
 | Phase | Plans | Completed | Status |
 |-------|-------|-----------|--------|
-| 1 | 4 | 0 | Planned |
+| 1 | 4 | 1 | In Progress |
 | 2 | 3 | 0 | Pending |
 | 3 | 4 | 0 | Pending |
 | 4 | 2 | 0 | Pending |
