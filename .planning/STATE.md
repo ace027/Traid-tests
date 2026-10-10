@@ -2,12 +2,12 @@
 
 ## Current Position
 - **Phase**: 3 of 4 (executing)
-- **Status**: Phase 3 executing — Plan 03-03 complete
-- **Last Activity**: Plan 03-03 execution (2026-10-10)
+- **Status**: Phase 3 executing — Plan 03-04 complete
+- **Last Activity**: Plan 03-04 execution (2026-10-10)
 
 ## Progress
 ```
-[###############.....] 76% — 10/13 plans complete
+[################....] 84% — 11/13 plans complete
 ```
 
 ## Recent Decisions
@@ -39,3 +39,4 @@ Run `/triad:build` to execute Phase 3: Browser client
 - Plan 03-01 (Wave 1): Vite app shell, networking, store and lobby — Complete
 - Plan 03-02 (Wave 2): Board renderer, dice and movement animation — Complete
 - Plan 03-03 (Wave 2): HUD: turn controls, battle, shop, inventory, towns, log, game over — Complete
+- Plan 03-04 (Wave 3): Two-tab browser smoke test and dev run script — Complete
