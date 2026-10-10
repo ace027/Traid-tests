@@ -50,6 +50,6 @@
 | Phase | Plans | Completed | Status |
 |-------|-------|-----------|--------|
 | 1 | 4 | 4 | Complete |
-| 2 | 3 | 2 | In Progress |
+| 2 | 3 | 3 | Executed |
 | 3 | 4 | 0 | Pending |
 | 4 | 2 | 0 | Pending |
