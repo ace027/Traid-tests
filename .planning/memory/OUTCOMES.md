@@ -14,3 +14,6 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-005 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 1 | 01-00 | testing-qa-verification-specialist | quality-review | success | 3 | review, testing | Phase 1 review PASSED in 3 cycle(s), 5 finding(s) |
 | O-006 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 1 | 01-00 | engineering-senior-developer | quality-review | success | 5 | review, engineering | Phase 1 review PASSED in 3 cycle(s), 5 finding(s) |
 | O-007 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 1 | 01-00 | engineering-frontend-developer | quality-review | success | 5 | review, engineering | Phase 1 review PASSED in 3 cycle(s), 5 finding(s) |
+| O-008 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 2 | 02-01 | engineering-backend-architect | implementation | failed | 5 | multiplayer-server-and-lobby, engineering | Town upgrades and capture, PvP item theft, boss bonus: Failed — Verification failed: npx tsc --noEmit |
+| O-009 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 2 | 02-02 | engineering-backend-architect | implementation | failed | 5 | multiplayer-server-and-lobby, engineering | Wire protocol and room manager: Partial |
+| O-010 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 2 | 02-01 | engineering-backend-architect | implementation | success | 2 | multiplayer-server-and-lobby, engineering | Town upgrades and capture, PvP item theft, boss bonus: Complete |
