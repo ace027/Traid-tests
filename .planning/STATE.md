@@ -1,9 +1,9 @@
 # Project State
 
 ## Current Position
-- **Phase**: 4 of 4 (executed, pending review)
-- **Status**: Phase 4 under review — cycle 1/2, 0 blocker(s) remaining
-- **Last Activity**: Phase 4 review cycle 1 (2026-10-10)
+- **Phase**: 4 of 4 (complete)
+- **Status**: Phase 4 complete — review passed (2 cycle(s))
+- **Last Activity**: Phase 4 review (2026-10-10)
 
 ## Progress
 ```
@@ -17,7 +17,7 @@
 - Max 4 players, no bots in v1
 
 ## Next Action
-Run `/triad:review` to verify Phase 4: Polish and playtest
+All phases complete — project review finished!
 
 ## Phase 1 Results
 (build started 2026-10-10)

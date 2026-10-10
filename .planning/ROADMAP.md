@@ -5,7 +5,7 @@
 - [x] Phase 1: Rules engine and project foundation (3 plans)
 - [x] Phase 2: Multiplayer server and lobby (3 plans)
 - [x] Phase 3: Browser client (4 plans)
-- [ ] Phase 4: Polish and playtest (2 plans)
+- [x] Phase 4: Polish and playtest (2 plans)
 
 ## Phase Details
 
@@ -52,4 +52,4 @@
 | 1 | 4 | 4 | Complete |
 | 2 | 3 | 3 | Complete |
 | 3 | 4 | 4 | Complete |
-| 4 | 2 | 2 | Executed |
+| 4 | 2 | 2 | Complete |

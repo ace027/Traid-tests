@@ -36,3 +36,5 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-027 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-00 | testing-api-tester | quality-review | success | 3 | review, testing | Phase 3 review PASSED in 3 cycle(s), 18 finding(s) |
 | O-028 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 4 | 04-01 | engineering-backend-architect | implementation | success | 2 | polish-and-playtest, engineering | Production server, offline-turn takeover, finished-room expiry: Complete |
 | O-029 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 4 | 04-02 | engineering-frontend-developer | implementation | success | 2 | polish-and-playtest, engineering | Back to lobby, art portraits in combat, README: Complete |
+| O-030 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 4 | 04-00 | testing-qa-verification-specialist | quality-review | success | 3 | review, testing | Phase 4 review PASSED in 2 cycle(s), 3 finding(s) |
+| O-031 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 4 | 04-00 | engineering-senior-developer | quality-review | success | 4 | review, engineering | Phase 4 review PASSED in 2 cycle(s), 3 finding(s) |
