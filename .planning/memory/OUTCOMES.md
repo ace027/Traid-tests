@@ -25,3 +25,4 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-016 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-01 | engineering-frontend-developer | implementation | success | 3 | browser-client, engineering | Vite app shell, networking, store and lobby: Complete |
 | O-017 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-02 | engineering-frontend-developer | implementation | success | 2 | browser-client, engineering | Board renderer, dice and movement animation: Complete |
 | O-018 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-03 | engineering-frontend-developer | implementation | success | 2 | browser-client, engineering | HUD: turn controls, battle, shop, inventory, towns, log, game over: Complete |
+| O-019 | 2026-10-10 | ccr-ea7c793b-xq4pvd | 3 | 03-04 | testing-qa-verification-specialist | quality-review | success | 2 | browser-client, testing | Two-tab browser smoke test and dev run script: Complete |

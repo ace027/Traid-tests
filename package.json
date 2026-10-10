@@ -9,9 +9,12 @@
     "server": "tsx src/server/main.ts",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:all": "node scripts/dev.mjs",
+    "e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@types/node": "^26.6.5",
     "@types/ws": "^8.18.2",
     "jsdom": "^29.1.1",
