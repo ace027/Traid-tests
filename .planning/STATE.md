@@ -2,12 +2,12 @@
 
 ## Current Position
 - **Phase**: 1 of 4 (executing)
-- **Status**: Phase 1 executing — Plan 01-03 complete
-- **Last Activity**: Plan 01-03 execution (2026-10-10)
+- **Status**: Phase 1 executing — Plan 01-04 complete
+- **Last Activity**: Plan 01-04 execution (2026-10-10)
 
 ## Progress
 ```
-[####................] 23% — 3/13 plans complete
+[######..............] 30% — 4/13 plans complete
 ```
 
 ## Recent Decisions
@@ -24,3 +24,4 @@ Run `/triad:build` to execute Phase 1: Rules engine and project foundation
 - Plan 01-01 (Wave 1): Project scaffold, core types and seeded RNG — Complete
 - Plan 01-02 (Wave 2): Map graph, movement, tile effects and calendar — Complete
 - Plan 01-03 (Wave 2): Content data, combat math and shops — Complete with Warnings
+- Plan 01-04 (Wave 3): Game reducer and headless full-game simulation — Complete
