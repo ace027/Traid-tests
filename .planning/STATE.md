@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Position
-- **Phase**: 2 of 4 (planned)
-- **Status**: Phase 2 planned -- 3 plans across 2 waves
-- **Last Activity**: Phase 2 planning (2026-10-10)
+- **Phase**: 2 of 4 (executing)
+- **Status**: Phase 2 executing — Plan 02-02 complete
+- **Last Activity**: Plan 02-02 execution (2026-10-10)
 
 ## Progress
 ```
-[######..............] 30% — 4/13 plans complete
+[#########...........] 46% — 6/13 plans complete
 ```
 
 ## Recent Decisions
@@ -30,3 +30,5 @@ Run `/triad:build` to execute Phase 2: Multiplayer server and lobby
 (build started 2026-10-10)
 - Plan 02-01 (Wave 1): Town upgrades and capture, PvP item theft, boss bonus — FAILED: Verification failed: npx tsc --noEmit
 - Plan 02-02 (Wave 1): Wire protocol and room manager — PARTIAL: tsc cannot pass until `@types/node` is added to package.json devDependencies. Adding a dependency is forbidden by the plan, and a `types` entry in tsconfig is also outside my file list.
+- Plan 02-01 (Wave 1): Town upgrades and capture, PvP item theft, boss bonus — Complete
+- Plan 02-02 (Wave 1): Wire protocol and room manager — Complete
