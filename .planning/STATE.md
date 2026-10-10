@@ -1,9 +1,9 @@
 # Project State
 
 ## Current Position
-- **Phase**: 3 of 4 (executed, pending review)
-- **Status**: Phase 3 under review — cycle 2/3, 0 blocker(s) remaining
-- **Last Activity**: Phase 3 review cycle 2 (2026-10-10)
+- **Phase**: 3 of 4 (complete)
+- **Status**: Phase 3 complete — review passed (3 cycle(s))
+- **Last Activity**: Phase 3 review (2026-10-10)
 
 ## Progress
 ```
@@ -17,7 +17,7 @@
 - Max 4 players, no bots in v1
 
 ## Next Action
-Fix the unresolved findings in 03-REVIEW.md, accept the phase as is, or re-plan; then run `/triad:review --phase 3`
+Run `/triad:plan 4` to plan Phase 4: Polish and playtest
 
 ## Phase 1 Results
 (build started 2026-10-10)
