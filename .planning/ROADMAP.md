@@ -52,4 +52,4 @@
 | 1 | 4 | 4 | Complete |
 | 2 | 3 | 3 | Complete |
 | 3 | 4 | 4 | Complete |
-| 4 | 2 | 2 | Complete |
+| 4 | 2 | 2 | Shipped |
