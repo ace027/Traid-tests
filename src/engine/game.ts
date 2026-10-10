@@ -7,7 +7,16 @@ import type {
 } from './types';
 import { createRng, nextInt } from './rng';
 import { buildDefaultMap, buildDefaultTowns } from './map';
-import { autoAdvance, movePlayer, resolveTile, rollDice, stepsAvailable } from './movement';
+import {
+  autoAdvance,
+  CAPTURE_COST_PER_LEVEL,
+  MAX_TOWN_LEVEL,
+  movePlayer,
+  resolveTile,
+  rollDice,
+  stepsAvailable,
+  UPGRADE_COST_PER_LEVEL,
+} from './movement';
 import { advanceTurn, getStartTileId } from './calendar';
 import { resolveBattleAction, startMonsterBattle, startPlayerBattle } from './combat';
 import { buyItem, equipItem, sellItem, useItem } from './inventory';
@@ -192,6 +201,56 @@ function dispatch(state: GameState, playerId: string, action: Action): ApplyResu
       if (phase !== 'shop') return fail(state, 'Not in a shop');
       events.push({ type: 'leave-shop', playerId });
       return { state: { ...state, phase: 'end-turn' }, events };
+    }
+    case 'upgradeTown':
+    case 'captureTown':
+    case 'leaveTown': {
+      if (phase !== 'town') return fail(state, 'Not in a town');
+      const me = state.players.find((p) => p.id === playerId);
+      const tileId = me?.tileId ?? '';
+      const town = state.towns[tileId];
+      if (!me || !town) return fail(state, 'No town here');
+      if (action.type === 'leaveTown') {
+        events.push({ type: 'leave-town', playerId });
+        return { state: { ...state, phase: 'end-turn' }, events };
+      }
+      if (action.type === 'upgradeTown') {
+        if (town.ownerId !== playerId) return fail(state, 'You do not own this town');
+        if (town.level >= MAX_TOWN_LEVEL) return fail(state, 'Town is already at max level');
+        const cost = UPGRADE_COST_PER_LEVEL * town.level;
+        if (me.gold < cost) return fail(state, 'Not enough gold to upgrade');
+        const level = town.level + 1;
+        events.push({ type: 'town-upgrade', playerId, tileId, level, cost });
+        return {
+          state: {
+            ...state,
+            phase: 'end-turn',
+            towns: { ...state.towns, [tileId]: { ...town, level } },
+            players: state.players.map((p) => (p.id === playerId ? { ...p, gold: p.gold - cost } : p)),
+          },
+          events,
+        };
+      }
+      if (town.ownerId === null || town.ownerId === playerId) {
+        return fail(state, 'You can only capture a rival town');
+      }
+      const cost = CAPTURE_COST_PER_LEVEL * town.level;
+      if (me.gold < cost) return fail(state, 'Not enough gold to capture');
+      const oldOwner = town.ownerId;
+      events.push({ type: 'town-capture', playerId, fromId: oldOwner, tileId, cost });
+      return {
+        state: {
+          ...state,
+          phase: 'end-turn',
+          towns: { ...state.towns, [tileId]: { ...town, ownerId: playerId } },
+          players: state.players.map((p) => {
+            if (p.id === playerId) return { ...p, gold: p.gold - cost };
+            if (p.id === oldOwner) return { ...p, gold: p.gold + cost };
+            return p;
+          }),
+        },
+        events,
+      };
     }
     case 'endTurn': {
       if (phase !== 'end-turn') return fail(state, `Cannot end turn during phase ${phase}`);

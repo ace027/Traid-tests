@@ -4,6 +4,9 @@ import type { GameEvent, GameState, Player } from './types';
 
 export const CLAIM_COST = 100;
 export const HEAL_FRACTION = 0.3;
+export const MAX_TOWN_LEVEL = 3;
+export const UPGRADE_COST_PER_LEVEL = 80;
+export const CAPTURE_COST_PER_LEVEL = 150;
 
 export function rollDice(rngState: number): { value: number; rngState: number } {
   const [value, next] = nextInt(rngState, 1, 6);
@@ -71,7 +74,7 @@ export function resolveTile(state: GameState): {
 } {
   const player = state.players[state.turnIndex];
   const tile = player && state.tiles[player.tileId];
-  const endTurn = (s: GameState) => ({ ...s, phase: 'end-turn' as const });
+  const endTurn = (s: GameState): GameState => ({ ...s, phase: 'end-turn' as const });
   if (!player || !tile) return { state: endTurn(state), events: [] };
   const events: GameEvent[] = [];
   let s = state;
@@ -126,7 +129,9 @@ export function resolveTile(state: GameState): {
           );
           events.push({ type: 'town-claim', playerId: player.id, tileId: tile.id, cost: CLAIM_COST });
         }
-      } else if (town.ownerId !== player.id) {
+      } else if (town.ownerId === player.id) {
+        return { state: { ...s, phase: 'town' }, events };
+      } else {
         const toll = Math.min(player.gold, town.income * town.level);
         s = {
           ...s,
@@ -137,6 +142,7 @@ export function resolveTile(state: GameState): {
           }),
         };
         events.push({ type: 'town-toll', playerId: player.id, ownerId: town.ownerId, amount: toll });
+        return { state: { ...s, phase: 'town' }, events };
       }
       return { state: endTurn(s), events };
     }
