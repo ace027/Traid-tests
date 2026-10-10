@@ -273,4 +273,25 @@ describe('websocket protocol', () => {
     actor.send({ t: 'ping' });
     await actor.next('pong');
   });
+
+  it('auto-plays the current player after their socket closes', async () => {
+    await server.close();
+    server = await startServer({ port: 0, offlineTurnMs: 200 });
+    const [a, b, c] = await setupRoom();
+    a.send({ t: 'start' });
+    for (const cl of [a, b, c]) await cl.next('state');
+    const s = a.lastState!;
+    const all = [a, b, c];
+    const actor = all.find((cl) => cl.playerId === s.players[s.turnIndex].id)!;
+    const rest = all.filter((cl) => cl !== actor);
+    actor.ws.terminate();
+    await actor.closed();
+    // the 5 s server tick may take a while to fire; allow for it
+    const st = await rest[0].next(
+      'state',
+      (m) => m.state.players[m.state.turnIndex].id !== actor.playerId,
+      15000,
+    );
+    expect(st.events.length).toBeGreaterThan(0);
+  }, 20000);
 });

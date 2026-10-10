@@ -1,5 +1,8 @@
 import type { GameEvent } from '../engine';
+import { createServer } from 'node:http';
 import type { Server as HttpServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { RawData } from 'ws';
 import { MAX_MESSAGE_BYTES, parseClientMessage, publicState } from '../shared/protocol';
@@ -10,9 +13,22 @@ import type { Room, Seat } from './rooms';
 export const PING_INTERVAL_MS = 30_000;
 export const SWEEP_INTERVAL_MS = 60_000;
 
+export const OFFLINE_TICK_MS = 5_000;
+
+const CONTENT_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.json': 'application/json; charset=utf-8',
+};
+
 export interface StartOptions {
   port: number;
   httpServer?: HttpServer;
+  staticDir?: string;
+  offlineTurnMs?: number;
+  now?: () => number;
 }
 
 export interface RunningServer {
@@ -25,21 +41,66 @@ interface Session {
   playerId: string;
 }
 
+function staticHandler(dir: string) {
+  const root = resolve(dir);
+  return async (
+    req: import('node:http').IncomingMessage,
+    res: import('node:http').ServerResponse,
+  ): Promise<void> => {
+    const notFound = () => {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Not found');
+    };
+    if (req.method !== 'GET' && req.method !== 'HEAD') return notFound();
+    let pathname: string;
+    try {
+      pathname = decodeURIComponent((req.url ?? '/').split('?')[0].split('#')[0]);
+    } catch {
+      return notFound();
+    }
+    if (pathname.includes('\0')) return notFound();
+    if (pathname.endsWith('/')) pathname += 'index.html';
+    const file = resolve(join(root, normalize(pathname)));
+    if (file !== root && !file.startsWith(root + sep)) return notFound();
+    const type = CONTENT_TYPES[extname(file).toLowerCase()];
+    if (!type) return notFound();
+    try {
+      const body = await readFile(file);
+      res.writeHead(200, { 'Content-Type': type, 'Content-Length': body.length });
+      res.end(req.method === 'HEAD' ? undefined : body);
+    } catch {
+      notFound();
+    }
+  };
+}
+
 export async function startServer(opts: StartOptions): Promise<RunningServer> {
-  const rooms = new RoomManager();
+  const rooms = new RoomManager(opts.now ?? Date.now, opts.offlineTurnMs ?? 45_000);
+  let httpServer = opts.httpServer;
+  if (!httpServer && opts.staticDir) {
+    const handler = staticHandler(opts.staticDir);
+    httpServer = createServer((req, res) => {
+      void handler(req, res);
+    });
+  }
+  const ownsHttp = !opts.httpServer && !!httpServer;
   const sessions = new Map<WebSocket, Session>();
   const roomSockets = new Map<string, Set<WebSocket>>();
   const alive = new WeakMap<WebSocket, boolean>();
 
-  const wss = opts.httpServer
-    ? new WebSocketServer({ server: opts.httpServer, maxPayload: MAX_MESSAGE_BYTES })
+  const wss = httpServer
+    ? new WebSocketServer({
+        server: httpServer,
+        maxPayload: MAX_MESSAGE_BYTES,
+        ...(opts.staticDir ? { path: '/ws' } : {}),
+      })
     : new WebSocketServer({ port: opts.port, maxPayload: MAX_MESSAGE_BYTES });
 
   await new Promise<void>((resolve, reject) => {
-    if (opts.httpServer) {
-      if (opts.httpServer.listening) resolve();
-      else opts.httpServer.listen(opts.port, () => resolve());
-      opts.httpServer.once('error', reject);
+    if (httpServer) {
+      if (httpServer.listening) resolve();
+      else httpServer.listen(opts.port, () => resolve());
+      httpServer.once('error', reject);
     } else {
       wss.once('listening', () => resolve());
     }
@@ -215,12 +276,25 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
     }
   }, PING_INTERVAL_MS);
   const sweepTimer = setInterval(() => rooms.sweep(), SWEEP_INTERVAL_MS);
+  const offlineTimer = setInterval(() => {
+    for (const code of rooms.codes()) {
+      try {
+        const room = rooms.get(code);
+        const before = room?.state;
+        const events = rooms.tickOffline(code);
+        if (room && room.state && room.state !== before) broadcastState(room, events);
+      } catch (e) {
+        console.error('Offline takeover failed', e);
+      }
+    }
+  }, OFFLINE_TICK_MS);
   pingTimer.unref();
   sweepTimer.unref();
+  offlineTimer.unref();
 
   const addr = wss.address();
-  const port = opts.httpServer
-    ? ((opts.httpServer.address() as { port: number } | null)?.port ?? opts.port)
+  const port = httpServer
+    ? ((httpServer.address() as { port: number } | null)?.port ?? opts.port)
     : typeof addr === 'object' && addr ? addr.port : opts.port;
 
   return {
@@ -228,8 +302,15 @@ export async function startServer(opts: StartOptions): Promise<RunningServer> {
     close: async () => {
       clearInterval(pingTimer);
       clearInterval(sweepTimer);
+      clearInterval(offlineTimer);
       for (const ws of wss.clients) ws.terminate();
       await new Promise<void>((resolve) => wss.close(() => resolve()));
+      if (ownsHttp && httpServer) {
+        await new Promise<void>((resolve) => {
+          httpServer.close(() => resolve());
+          httpServer.closeAllConnections();
+        });
+      }
       sessions.clear();
       roomSockets.clear();
     },

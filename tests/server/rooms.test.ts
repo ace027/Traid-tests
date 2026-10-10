@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RoomManager, EMPTY_ROOM_TTL_MS, MAX_ROOMS } from '../../src/server/rooms';
+import { RoomManager, EMPTY_ROOM_TTL_MS, FINISHED_ROOM_TTL_MS, MAX_ROOMS } from '../../src/server/rooms';
 import { parseClientMessage } from '../../src/shared/protocol';
 
 function ok<T extends object>(r: T | { error: string }): T {
@@ -150,5 +150,67 @@ describe('parseClientMessage', () => {
     expect(p({ t: 'action', action: { type: 'battleAction', action: 'nuke' } })).toBeNull();
     expect(p({ t: 'action' })).toBeNull();
     expect(parseClientMessage(JSON.stringify({ t: 'rejoin', code: 'ABCD', token: 'x'.repeat(20000) }))).toBeNull();
+  });
+});
+
+describe('offline turn takeover', () => {
+  function started(offlineMs = 1000) {
+    let t = 1_000_000;
+    const rm = new RoomManager(() => t, offlineMs);
+    const host = ok(rm.create('Host', 'knight'));
+    const code = host.room.code;
+    const seats = [host.seat, ok(rm.join(code, 'P1', 'mage')).seat];
+    expect(rm.start(code, host.seat.playerId, 42).error).toBeUndefined();
+    const room = rm.get(code)!;
+    const current = () => room.state!.players[room.state!.turnIndex].id;
+    const seatOf = (id: string) => seats.find((s) => s.playerId === id)!;
+    return { rm, code, room, current, seatOf, advance: (ms: number) => (t += ms), now: () => t };
+  }
+
+  it('auto-plays an offline current player after the timeout and passes the turn', () => {
+    const g = started();
+    const first = g.current();
+    g.rm.disconnect(g.code, first);
+    expect(g.rm.tickOffline(g.code, g.now() + 999)).toEqual([]);
+    expect(g.current()).toBe(first);
+    g.advance(1000);
+    const events = g.rm.tickOffline(g.code);
+    expect(events.length).toBeGreaterThan(0);
+    expect(g.current()).not.toBe(first);
+  });
+
+  it('never auto-plays a connected current player', () => {
+    const g = started();
+    const first = g.current();
+    g.advance(10 * 60_000);
+    expect(g.rm.tickOffline(g.code)).toEqual([]);
+    expect(g.current()).toBe(first);
+  });
+
+  it('rejoining before the timeout cancels the takeover', () => {
+    const g = started();
+    const first = g.current();
+    g.rm.disconnect(g.code, first);
+    g.advance(500);
+    g.rm.rejoin(g.code, g.seatOf(first).token);
+    g.advance(5000);
+    expect(g.rm.tickOffline(g.code)).toEqual([]);
+    expect(g.current()).toBe(first);
+  });
+
+  it('sweeps finished rooms after 10 minutes', () => {
+    const g = started();
+    g.room.finishedAt = g.now();
+    expect(g.rm.sweep(g.now() + FINISHED_ROOM_TTL_MS - 1)).toBe(0);
+    expect(g.rm.sweep(g.now() + FINISHED_ROOM_TTL_MS)).toBe(1);
+    expect(g.rm.get(g.code)).toBeUndefined();
+  });
+
+  it('keeps taking over turns of an all-offline room until the game ends or cap', () => {
+    const g = started();
+    for (const s of g.room.seats) g.rm.disconnect(g.code, s.playerId);
+    g.advance(2000);
+    for (let i = 0; i < 20; i++) g.rm.tickOffline(g.code);
+    expect(g.room.state).not.toBeNull();
   });
 });
