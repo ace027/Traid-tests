@@ -1,4 +1,4 @@
-# Realm Rivals
+# Realm Rush
 
 An original board-game RPG inspired by the classic genre: roam a map, fight monsters, trade, and capture towns. Built for private use with friends.
 

@@ -51,7 +51,7 @@ function portrait(seed: string, look: Look): HTMLElement {
   return box;
 }
 
-function combatant(name: string, stats: Stats, seed: string, look: Look): HTMLElement {
+function combatant(name: string, stats: Pick<Stats, 'hp' | 'maxHp'>, seed: string, look: Look): HTMLElement {
   const c = document.createElement('div');
   c.className = 'combatant';
   const n = document.createElement('strong');
@@ -87,7 +87,7 @@ export function renderBattle(
       row.append(combatant(m.name, { ...m.stats, hp }, b.defender.id, { kind: 'monster', id: b.defender.id }));
     } else {
       const hp = b.monsterHp ?? 0;
-      row.append(combatant('Unknown foe', { hp, maxHp: hp } as Stats, b.defender.id, { kind: 'monster', id: b.defender.id }));
+      row.append(combatant('Unknown foe', { hp, maxHp: hp }, b.defender.id, { kind: 'monster', id: b.defender.id }));
     }
   } else {
     const d = state.players.find((p) => p.id === b.defender.id);

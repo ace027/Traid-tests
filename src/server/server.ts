@@ -75,7 +75,7 @@ function staticHandler(dir: string) {
 }
 
 export async function startServer(opts: StartOptions): Promise<RunningServer> {
-  const rooms = new RoomManager(opts.now ?? Date.now, opts.offlineTurnMs ?? 45_000);
+  const rooms = new RoomManager(opts.now ?? Date.now, opts.offlineTurnMs);
   let httpServer = opts.httpServer;
   if (!httpServer && opts.staticDir) {
     const handler = staticHandler(opts.staticDir);
