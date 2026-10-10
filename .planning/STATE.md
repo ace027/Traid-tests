@@ -1,9 +1,9 @@
 # Project State
 
 ## Current Position
-- **Phase**: 2 of 4 (executed, pending review)
-- **Status**: Phase 2 under review — cycle 1/3, 0 blocker(s) remaining
-- **Last Activity**: Phase 2 review cycle 1 (2026-10-10)
+- **Phase**: 2 of 4 (complete)
+- **Status**: Phase 2 complete — review passed (2 cycle(s))
+- **Last Activity**: Phase 2 review (2026-10-10)
 
 ## Progress
 ```
@@ -17,7 +17,7 @@
 - Max 4 players, no bots in v1
 
 ## Next Action
-Run `/triad:review` to verify Phase 2: Multiplayer server and lobby
+Run `/triad:plan 3` to plan Phase 3: Browser client
 
 ## Phase 1 Results
 (build started 2026-10-10)
