@@ -1,9 +1,9 @@
 # Project State
 
 ## Current Position
-- **Phase**: 3 of 4 (complete)
-- **Status**: Phase 3 complete — review passed (3 cycle(s))
-- **Last Activity**: Phase 3 review (2026-10-10)
+- **Phase**: 4 of 4 (planned)
+- **Status**: Phase 4 planned -- 2 plans across 1 waves
+- **Last Activity**: Phase 4 planning (2026-10-10)
 
 ## Progress
 ```
@@ -17,7 +17,7 @@
 - Max 4 players, no bots in v1
 
 ## Next Action
-Run `/triad:plan 4` to plan Phase 4: Polish and playtest
+Run `/triad:build` to execute Phase 4: Polish and playtest
 
 ## Phase 1 Results
 (build started 2026-10-10)
