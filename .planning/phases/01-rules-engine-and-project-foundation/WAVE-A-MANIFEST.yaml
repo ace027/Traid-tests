@@ -1,0 +1,9 @@
+wave: A
+phase: 1
+status: failed
+timestamp: "2026-10-10T16:01:22Z"
+service_groups:
+  default:
+    status: failed
+    plans: [01-04]
+    files: []
