@@ -68,7 +68,7 @@ describe('headless bot simulation', () => {
         const defeated = events.filter((e) => e.type === 'boss-defeated');
         expect(defeated).toHaveLength(1);
         expect(state.week).toBeLessThanOrEqual(4);
-        expect(state.winnerId).toBe((defeated[0] as { playerId: string }).playerId);
+        expect(state.winnerId).toBe(defeated[0].playerId);
       }
     }
   });
