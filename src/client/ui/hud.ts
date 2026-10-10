@@ -177,7 +177,7 @@ export function mountHud(root: HTMLElement, store: Store, send: (m: ClientMessag
 
     renderLog(logList, state, s.lastEvents);
 
-    const canInv = !!me && state.phase !== 'battle' && state.phase !== 'choose-path' && state.phase !== 'game-over';
+    const canInv = !!me && current?.id === me.id && state.phase !== 'battle' && state.phase !== 'choose-path' && state.phase !== 'game-over';
     invToggle.hidden = !canInv;
     invBox.hidden = !(canInv && invOpen);
     patch(invBox, canInv && invOpen && me ? [renderInventory(me, act)] : []);

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { connect } from '../../src/client/net';
+import { connect, isReplaced, mountReplacedNotice } from '../../src/client/net';
 import { createStore, initialState, reduceServerMessage } from '../../src/client/store';
 
 describe('reduceServerMessage', () => {
@@ -98,5 +98,19 @@ describe('net', () => {
     vi.advanceTimersByTime(20000);
     expect(FakeSocket.last).toBe(second);
     vi.useRealTimers();
+  });
+
+  it('code 4000 flags the session as replaced and shows a Reconnect notice', () => {
+    const store = createStore();
+    connect(store, 'ws://x', factory);
+    expect(isReplaced(store.get())).toBe(false);
+    FakeSocket.last.onclose?.({ code: 4000 });
+    expect(isReplaced(store.get())).toBe(true);
+    const onReconnect = vi.fn();
+    const box = mountReplacedNotice(document.body, onReconnect);
+    expect(box.textContent).toContain('Session opened elsewhere');
+    box.querySelector('button')!.click();
+    expect(onReconnect).toHaveBeenCalledTimes(1);
+    box.remove();
   });
 });

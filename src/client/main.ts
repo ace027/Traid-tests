@@ -1,4 +1,4 @@
-import { connect } from './net';
+import { connect, isReplaced, mountReplacedNotice } from './net';
 import { createStore } from './store';
 import { mountLobby } from './ui/lobby';
 import { mountBoard, mountHud } from './views';
@@ -42,6 +42,18 @@ function showGame() {
   mountHud(hud, store, send);
   inGame = true;
 }
+
+let replacedNotice: HTMLElement | null = null;
+store.subscribe((s) => {
+  if (isReplaced(s)) {
+    if (!replacedNotice) replacedNotice = mountReplacedNotice(document.body, () => location.reload());
+    return;
+  }
+  if (replacedNotice) {
+    replacedNotice.remove();
+    replacedNotice = null;
+  }
+});
 
 store.subscribe((s) => {
   if (s.state && !inGame) showGame();

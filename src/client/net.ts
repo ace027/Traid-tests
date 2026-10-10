@@ -2,7 +2,7 @@ import type { ClientMessage, ServerMessage } from '../shared/protocol';
 import { reduceServerMessage, type Store } from './store';
 
 export interface Connection {
-  send(m: ClientMessage): void;
+  send(m: ClientMessage): boolean;
   close(): void;
 }
 
@@ -10,6 +10,28 @@ export type SocketFactory = (url: string) => WebSocket;
 
 const SS_CODE = 'rr.code';
 const SS_TOKEN = 'rr.token';
+
+export const REPLACED_MESSAGE = 'Session opened elsewhere';
+
+export function isReplaced(s: { connection: string; error: string | null }): boolean {
+  return s.connection === 'closed' && s.error === REPLACED_MESSAGE;
+}
+
+/** Full-screen notice with a Reconnect button, shown when the server replaced this connection. */
+export function mountReplacedNotice(parent: HTMLElement, reconnect: () => void): HTMLElement {
+  const box = document.createElement('div');
+  box.className = 'banner replaced';
+  box.setAttribute('role', 'alert');
+  const text = document.createElement('span');
+  text.textContent = REPLACED_MESSAGE;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = 'Reconnect';
+  btn.addEventListener('click', reconnect);
+  box.append(text, ' ', btn);
+  parent.append(box);
+  return box;
+}
 
 export function defaultUrl(): string {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -34,8 +56,13 @@ export function connect(store: Store, url?: string, factory?: SocketFactory): Co
   let timer: ReturnType<typeof setTimeout> | null = null;
   let rejoinPending = false;
 
-  const rawSend = (m: ClientMessage) => {
-    if (ws && ws.readyState === 1) ws.send(JSON.stringify(m));
+  const rawSend = (m: ClientMessage): boolean => {
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify(m));
+      return true;
+    }
+    store.set({ error: 'Not connected' });
+    return false;
   };
 
   const open = () => {
@@ -84,8 +111,13 @@ export function connect(store: Store, url?: string, factory?: SocketFactory): Co
     };
     sock.onclose = (ev: CloseEvent) => {
       if (ws === sock) ws = null;
+      if (ev.code === 4000 && !closedByUser) {
+        // Another tab/reload took over this seat; do not reconnect, tell the user.
+        store.set({ connection: 'closed', error: REPLACED_MESSAGE });
+        return;
+      }
       store.set({ connection: 'closed' });
-      if (closedByUser || ev.code === 4000) return;
+      if (closedByUser) return;
       const delay = Math.min(1000 * 2 ** attempt, 10000);
       attempt++;
       timer = setTimeout(open, delay);
