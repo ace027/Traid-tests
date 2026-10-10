@@ -38,6 +38,9 @@ export function mountHud(root: HTMLElement, store: Store, send: (m: ClientMessag
   const toast = div('toast', 'p');
   toast.setAttribute('role', 'alert');
   toast.hidden = true;
+  const TOAST_MS = 4000;
+  let toastFor: string | null = null;
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
   top.setAttribute('role', 'status');
   top.setAttribute('aria-live', 'polite');
   root.append(toast, top, side, ctx, logBox, invToggle, invBox);
@@ -108,42 +111,76 @@ export function mountHud(root: HTMLElement, store: Store, send: (m: ClientMessag
     return out;
   }
 
+  // Replace children only when the markup changed; otherwise keep existing nodes (and focus).
+  // When changed, restore focus to the control with the same position and label.
+  function patch(el: HTMLElement, nodes: Node[]): void {
+    const tmp = document.createElement('div');
+    tmp.append(...nodes);
+    if (tmp.innerHTML === el.innerHTML) return;
+    const sel = 'button, input, select, textarea, a[href]';
+    const active = document.activeElement;
+    let idx = -1;
+    let label = '';
+    if (active && el.contains(active)) {
+      idx = Array.from(el.querySelectorAll(sel)).indexOf(active);
+      label = active.textContent ?? '';
+    }
+    el.textContent = '';
+    el.append(...Array.from(tmp.childNodes));
+    if (idx >= 0) {
+      const next = el.querySelectorAll<HTMLElement>(sel)[idx];
+      if (next && (next.textContent ?? '') === label) next.focus();
+    }
+  }
+
   function render(): void {
     const s = store.get();
     toast.textContent = s.error ?? '';
     toast.hidden = !s.error;
+    if (s.error !== toastFor) {
+      toastFor = s.error ?? null;
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = null;
+      if (toastFor) {
+        toastTimer = setTimeout(() => {
+          toastTimer = null;
+          store.set({ error: null });
+        }, TOAST_MS);
+      }
+    }
     const state = s.state;
     if (!state) return;
     const me = state.players.find((p) => p.id === s.playerId);
     const current = state.players[state.turnIndex];
 
-    top.textContent = '';
     const parts = [`Week ${state.week}, Day ${state.day}`, `Turn: ${current?.name ?? '-'}`];
     if (me) parts.push(`Gold ${me.gold}`, `HP ${me.stats.hp}/${me.stats.maxHp}`, `Lv ${me.level}`);
-    for (const t of parts) {
-      const span = document.createElement('span');
-      span.textContent = t;
-      top.append(span);
-    }
+    patch(
+      top,
+      parts.map((t) => {
+        const span = document.createElement('span');
+        span.textContent = t;
+        return span;
+      }),
+    );
 
-    side.textContent = '';
+    const rows: HTMLElement[] = [];
     for (const p of state.players) {
       const row = div(p.id === current?.id ? 'score-row current' : 'score-row');
       const towns = Object.values(state.towns).filter((t) => t.ownerId === p.id).length;
       row.textContent = `${p.name} (${CLASSES[p.classId].name}) - ${p.gold}g, ${towns} towns, score ${computeScore(state as never, p.id)}`;
-      side.append(row);
+      rows.push(row);
     }
+    patch(side, rows);
 
-    ctx.textContent = '';
-    ctx.append(...context(state, s.playerId));
+    patch(ctx, context(state, s.playerId));
 
     renderLog(logList, state, s.lastEvents);
 
     const canInv = !!me && state.phase !== 'battle' && state.phase !== 'choose-path' && state.phase !== 'game-over';
     invToggle.hidden = !canInv;
     invBox.hidden = !(canInv && invOpen);
-    invBox.textContent = '';
-    if (canInv && invOpen && me) invBox.append(renderInventory(me, act));
+    patch(invBox, canInv && invOpen && me ? [renderInventory(me, act)] : []);
   }
 
   store.subscribe(render);

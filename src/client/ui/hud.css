@@ -20,7 +20,10 @@
 .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .winner-banner { color: var(--accent); text-align: center; }
 .notice { color: var(--danger); }
+.hud > .toast { grid-column: 2; grid-row: 2; justify-self: center; align-self: start; margin: 0; padding: 8px 12px; border-radius: 6px; color: var(--danger); background: var(--panel-2); border: 1px solid var(--danger); z-index: 1; }
 @media (max-width: 800px) {
+  /* Out of flow so it never adds a grid row or shifts the board spacer. */
+  .hud > .toast { position: absolute; top: 56px; left: 8px; right: 8px; grid-column: auto; grid-row: auto; justify-self: auto; }
   /* Row 2 is an empty spacer that keeps the board canvas visible and clickable;
      panels stack below it and the HUD scrolls when they overflow. */
   .hud { grid-template-columns: 1fr; grid-template-rows: auto minmax(45vh, 1fr) repeat(4, auto); overflow-y: auto; overscroll-behavior: contain; }

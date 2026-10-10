@@ -161,4 +161,20 @@ describe('hud error toast', () => {
     expect(alert().hidden).toBe(true);
     expect(alert().textContent).toBe('');
   });
+
+  it('auto-clears the error after 4 seconds', () => {
+    vi.useFakeTimers();
+    try {
+      const alert = () => root.querySelector('[role="alert"]') as HTMLElement;
+      store.set({ error: 'Not enough gold' });
+      vi.advanceTimersByTime(3900);
+      expect(alert().hidden).toBe(false);
+      vi.advanceTimersByTime(200);
+      expect(store.get().error).toBeNull();
+      expect(alert().hidden).toBe(true);
+      expect(alert().textContent).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
