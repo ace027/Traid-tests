@@ -1,9 +1,9 @@
 # Project State
 
 ## Current Position
-- **Phase**: 2 of 4 (complete)
-- **Status**: Phase 2 complete — review passed (2 cycle(s))
-- **Last Activity**: Phase 2 review (2026-10-10)
+- **Phase**: 3 of 4 (planned)
+- **Status**: Phase 3 planned -- 4 plans across 3 waves
+- **Last Activity**: Phase 3 planning (2026-10-10)
 
 ## Progress
 ```
@@ -17,7 +17,7 @@
 - Max 4 players, no bots in v1
 
 ## Next Action
-Run `/triad:plan 3` to plan Phase 3: Browser client
+Run `/triad:build` to execute Phase 3: Browser client
 
 ## Phase 1 Results
 (build started 2026-10-10)
