@@ -4,7 +4,6 @@ import type {
   GameEvent,
   GameState,
   Player,
-  Tile,
 } from './types';
 import { createRng, nextInt } from './rng';
 import { buildDefaultMap, buildDefaultTowns } from './map';
@@ -134,13 +133,12 @@ function finishMovement(state: GameState, events: GameEvent[]): GameState {
 }
 
 function afterStep(state: GameState, events: GameEvent[], playerId: string): GameState {
-  let s = autoAdvance(state, playerId);
+  const s = autoAdvance(state, playerId);
   events.push({ type: 'move', playerId, tileId: s.players[s.turnIndex].tileId, remaining: s.pendingMoves });
   if (s.pendingMoves > 0 && stepsAvailable(s, playerId).length > 0) {
     return { ...s, phase: 'choose-path' };
   }
-  s = finishMovement(s, events);
-  return s;
+  return finishMovement(s, events);
 }
 
 function dispatch(state: GameState, playerId: string, action: Action): ApplyResult {

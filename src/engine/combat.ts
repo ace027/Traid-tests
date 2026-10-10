@@ -28,7 +28,6 @@ function findPlayer(state: GameState, id: string): Player | undefined {
   return state.players.find((p) => p.id === id);
 }
 
-// ---------- pure math helpers (exported for tests and UI previews) ----------
 
 /** Raw damage: max(1, atk*variance*mult - def/2), def ignored when ignoreDef. Crits multiply by 1.5. */
 export function computeDamage(
@@ -82,7 +81,6 @@ export function grantXp(player: Player, xp: number): GameEvent[] {
   return events;
 }
 
-// ---------- battle start ----------
 
 export function startMonsterBattle(state: GameState, playerId: string, monsterId: string): GameState {
   const player = findPlayer(state, playerId);
@@ -121,7 +119,6 @@ export function startPlayerBattle(state: GameState, attackerId: string, defender
   return next;
 }
 
-// ---------- battle resolution ----------
 
 interface Fighter {
   id: string;
