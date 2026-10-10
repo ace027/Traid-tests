@@ -38,12 +38,20 @@ function gameOver(state: GameState): GameState {
   };
 }
 
-function respawn(p: Player): Player {
+/** Single source of truth for the start tile: the tile of kind 'start'. */
+export function getStartTileId(tiles: GameState['tiles']): string {
+  const t = Object.values(tiles).find((tile) => tile.kind === 'start');
+  if (!t) throw new Error('Map has no start tile');
+  return t.id;
+}
+
+function respawn(p: Player, tiles: GameState['tiles']): Player {
   if (!p.defeated) return p;
+  const startTileId = getStartTileId(tiles);
   return {
     ...p,
     defeated: false,
-    tileId: 'start',
+    tileId: startTileId,
     stats: { ...p.stats, hp: Math.max(1, Math.ceil(p.stats.maxHp / 2)) },
   };
 }
@@ -61,7 +69,7 @@ function endOfDay(state: GameState): GameState {
     week += 1;
     day = 1;
   }
-  return { ...state, players: players.map(respawn), day, week };
+  return { ...state, players: players.map((p) => respawn(p, state.tiles)), day, week };
 }
 
 /**

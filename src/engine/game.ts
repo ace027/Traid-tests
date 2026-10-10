@@ -8,8 +8,8 @@ import type {
 } from './types';
 import { createRng, nextInt } from './rng';
 import { buildDefaultMap, buildDefaultTowns } from './map';
-import { autoAdvance, movePlayer, resolveTile, rollDice } from './movement';
-import { advanceTurn } from './calendar';
+import { autoAdvance, movePlayer, resolveTile, rollDice, stepsAvailable } from './movement';
+import { advanceTurn, getStartTileId } from './calendar';
 import { resolveBattleAction, startMonsterBattle, startPlayerBattle } from './combat';
 import { buyItem, equipItem, sellItem, useItem } from './inventory';
 import { CLASSES } from './data/classes';
@@ -43,8 +43,7 @@ export function createGame(opts: CreateGameOptions): GameState {
     if (!CLASSES[p.classId]) throw new Error(`Unknown class ${String(p.classId)}`);
   }
   const tiles = buildDefaultMap();
-  const startTile = Object.values(tiles).find((t: Tile) => t.kind === 'start');
-  if (!startTile) throw new Error('Map has no start tile');
+  const startTileId = getStartTileId(tiles);
   return {
     seed,
     rngState: createRng(seed),
@@ -55,7 +54,7 @@ export function createGame(opts: CreateGameOptions): GameState {
         classId: p.classId,
         stats: { ...CLASSES[p.classId].base },
         gold: STARTING_GOLD,
-        tileId: startTile.id,
+        tileId: startTileId,
         inventory: [],
         equipment: {},
         level: 1,
@@ -104,6 +103,7 @@ function realiseMonsterBattle(state: GameState, events: GameEvent[]): GameState 
     if (m) {
       const tier = Math.min(3, Math.max(1, Number(m[1]))) as 1 | 2 | 3;
       const pool = monstersForTier(tier);
+      if (pool.length === 0) throw new Error(`No monsters for tier ${tier}`);
       const [idx, rng] = nextInt(s.rngState, 0, pool.length - 1);
       monsterId = pool[idx].id;
       s = { ...s, rngState: rng };
@@ -136,7 +136,9 @@ function finishMovement(state: GameState, events: GameEvent[]): GameState {
 function afterStep(state: GameState, events: GameEvent[], playerId: string): GameState {
   let s = autoAdvance(state, playerId);
   events.push({ type: 'move', playerId, tileId: s.players[s.turnIndex].tileId, remaining: s.pendingMoves });
-  if (s.pendingMoves > 0) return { ...s, phase: 'choose-path' };
+  if (s.pendingMoves > 0 && stepsAvailable(s, playerId).length > 0) {
+    return { ...s, phase: 'choose-path' };
+  }
   s = finishMovement(s, events);
   return s;
 }
@@ -205,6 +207,9 @@ function dispatch(state: GameState, playerId: string, action: Action): ApplyResu
 
 export function applyAction(state: GameState, playerId: string, action: Action): ApplyResult {
   if (state.phase === 'game-over') return fail(state, 'The game is over');
+  if (!action || typeof action !== 'object' || typeof action.type !== 'string') {
+    return fail(state, 'Malformed action');
+  }
   const current = state.players[state.turnIndex];
   if (!current || current.id !== playerId) return fail(state, `It is not ${playerId}'s turn`);
   try {

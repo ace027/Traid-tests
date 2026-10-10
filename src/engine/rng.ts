@@ -18,6 +18,9 @@ export function nextInt(
   min: number,
   maxInclusive: number,
 ): [number, number] {
+  if (!Number.isFinite(min) || !Number.isFinite(maxInclusive) || min > maxInclusive) {
+    throw new RangeError(`nextInt: invalid range [${min}, ${maxInclusive}]`);
+  }
   const [f, next] = nextFloat(state);
   if (min === maxInclusive) return [min, next];
   return [min + Math.floor(f * (maxInclusive - min + 1)), next];

@@ -39,6 +39,7 @@ export function chooseBotAction(state: GameState, playerId: string): Action {
     }
     case 'choose-path': {
       const steps = state.tiles[player.tileId]?.next ?? [];
+      if (steps.length === 0) throw new Error(`no path from tile ${player.tileId}`);
       return { type: 'choosePath', tileId: steps[Math.floor(rand() * steps.length)] };
     }
     case 'battle': {

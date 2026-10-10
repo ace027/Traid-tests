@@ -14,7 +14,7 @@ function mkState(n = 2): GameState {
   return {
     seed: 1, rngState: 1,
     players: Array.from({ length: n }, (_, i) => mkPlayer(`p${i}`)),
-    turnIndex: 0, day: 1, week: 1, phase: 'end-turn', tiles: {},
+    turnIndex: 0, day: 1, week: 1, phase: 'end-turn', tiles: { start: { id: 'start', kind: 'start', x: 0, y: 0, next: [] } },
     towns: { t1: { tileId: 't1', ownerId: 'p1', level: 2, income: 20 } },
     pendingMoves: 0, battle: null, log: [], winnerId: null,
   };

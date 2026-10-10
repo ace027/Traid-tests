@@ -1,4 +1,5 @@
 import { nextInt } from './rng';
+import { LAST_WEEK, isBossEnabled } from './calendar';
 import type { GameEvent, GameState, Player } from './types';
 
 export const CLAIM_COST = 100;
@@ -33,7 +34,7 @@ export function movePlayer(
   const players = state.players.map((p) =>
     p.id === playerId ? { ...p, tileId } : p,
   );
-  const stopsHere = state.tiles[tileId]?.kind === 'boss' && state.week === 4;
+  const stopsHere = state.tiles[tileId]?.kind === 'boss' && isBossEnabled(state);
   return {
     ...state,
     players,
@@ -78,11 +79,11 @@ export function resolveTile(state: GameState): {
   switch (tile.kind) {
     case 'monster':
     case 'boss': {
-      if (tile.kind === 'boss' && state.week !== 4) {
+      if (tile.kind === 'boss' && !isBossEnabled(state)) {
         return { state: endTurn(s), events };
       }
       const defenderId =
-        tile.kind === 'boss' ? 'boss' : monsterIdForTier(Math.min(4, state.week));
+        tile.kind === 'boss' ? 'boss' : monsterIdForTier(Math.min(LAST_WEEK, state.week));
       s = {
         ...s,
         phase: 'battle',

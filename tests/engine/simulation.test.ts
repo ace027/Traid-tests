@@ -45,7 +45,7 @@ describe('headless bot simulation', () => {
   for (const n of [2, 3, 4]) {
     for (let seed = 1; seed <= 5; seed++) {
       it(`${n} bots, seed ${seed} finishes`, () => {
-        const { state, events } = play(seed, n);
+        const { state } = play(seed, n);
         expect(state.winnerId).not.toBeNull();
         expect(state.players.some((p) => p.id === state.winnerId)).toBe(true);
         expect(state.phase).toBe('game-over');

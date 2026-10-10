@@ -260,6 +260,8 @@ export function resolveBattleAction(state: GameState, action: BattleAction): Bat
       next.log.push(`${actor.name} fails to escape`);
       break;
     }
+    default:
+      throw new Error('Unknown battle action');
   }
 
   if (enemyF.getHp() <= 0) {
