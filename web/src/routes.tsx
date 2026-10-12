@@ -1,28 +1,49 @@
+import { useContext, useState, type ReactNode } from 'react';
+import { QueryClient, QueryClientContext, QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { navigation } from './components/layout/navigation';
 import { Placeholder } from './pages/Placeholder';
 import { NotFound } from './pages/NotFound';
+import { SettingsIndex } from './pages/settings/SettingsIndex';
+import { MediaManagement } from './pages/settings/MediaManagement';
+import { Profiles } from './pages/settings/Profiles';
+import { Quality } from './pages/settings/Quality';
+import { Tags } from './pages/settings/Tags';
+import { General } from './pages/settings/General';
+import { UiSettings } from './pages/settings/UiSettings';
+
+/**
+ * Settings pages fetch with TanStack Query. App provides the shared client; this
+ * only supplies a private one when the routes are rendered without it (tests, embeds).
+ */
+function EnsureQueryClient({ children }: { children: ReactNode }) {
+  const existing = useContext(QueryClientContext);
+  const [fallback] = useState(() => (existing ? null : new QueryClient()));
+  return fallback ? <QueryClientProvider client={fallback}>{children}</QueryClientProvider> : <>{children}</>;
+}
+
+const withQuery = (page: ReactNode) => <EnsureQueryClient>{page}</EnsureQueryClient>;
 
 const placeholder = (title: string) => <Placeholder title={title} />;
 
 /**
- * Children of /settings. Plan 01-04 swaps the placeholders for real pages;
+ * Children of /settings. Indexers, download clients, import lists, connect and metadata stay placeholders;
  * paths are relative to /settings ('index' is the overview).
  */
 export const settingsRoutes: RouteObject[] = [
-  { index: true, element: placeholder('Settings') },
-  { path: 'mediamanagement', element: placeholder('Media Management') },
-  { path: 'profiles', element: placeholder('Profiles') },
-  { path: 'quality', element: placeholder('Quality') },
+  { index: true, element: <SettingsIndex /> },
+  { path: 'mediamanagement', element: withQuery(<MediaManagement />) },
+  { path: 'profiles', element: withQuery(<Profiles />) },
+  { path: 'quality', element: withQuery(<Quality />) },
   { path: 'indexers', element: placeholder('Indexers') },
   { path: 'downloadclients', element: placeholder('Download Clients') },
   { path: 'importlists', element: placeholder('Import Lists') },
   { path: 'connect', element: placeholder('Connect') },
   { path: 'metadata', element: placeholder('Metadata') },
-  { path: 'tags', element: placeholder('Tags') },
-  { path: 'general', element: placeholder('General') },
-  { path: 'ui', element: placeholder('UI') },
+  { path: 'tags', element: withQuery(<Tags />) },
+  { path: 'general', element: withQuery(<General />) },
+  { path: 'ui', element: withQuery(<UiSettings />) },
 ];
 
 /** Placeholder routes for every non-settings nav path. */
