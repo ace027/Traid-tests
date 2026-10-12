@@ -94,13 +94,17 @@ export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Pr
 
   app.get('/ping', async () => ({ status: 'OK' }));
   // The bootstrap endpoint is unauthenticated, so the API key is only disclosed to
-  // loopback clients (the local UI). Remote callers get the public fields only.
+  // direct loopback clients (the local UI). This gate is best-effort: requests carrying
+  // proxy headers are treated as remote, so a same-host reverse proxy never leaks the key.
+  // Remote callers get the public fields only and must supply the key themselves.
   const isLoopback = (ip: string) =>
     ip === '::1' || ip === '127.0.0.1' || ip.startsWith('::ffff:127.') || ip.startsWith('127.');
+  const PROXY_HEADERS = ['x-forwarded-for', 'forwarded', 'x-real-ip', 'x-forwarded-host', 'x-forwarded-proto'];
   app.get('/initialize.json', async (request) => {
     const host = getHostConfig(db);
+    const proxied = PROXY_HEADERS.some((h) => request.headers[h] !== undefined);
     return {
-      apiKey: isLoopback(request.ip) ? host.apiKey : '',
+      apiKey: isLoopback(request.ip) && !proxied ? host.apiKey : '',
       urlBase: host.urlBase,
       instanceName: host.instanceName,
       version: readVersion(),

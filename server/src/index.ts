@@ -15,7 +15,10 @@ if (urlBase) {
   app.server.prependListener('request', (req) => {
     const url = req.url ?? '';
     if (url === urlBase || url.startsWith(`${urlBase}/`) || url.startsWith(`${urlBase}?`)) {
-      req.url = url.slice(urlBase.length) || '/';
+      req.url = '/' + url.slice(urlBase.length).replace(/^\/+/, '');
+    } else {
+      // Outside the base: route to a path no handler serves, so it 404s.
+      req.url = '/__outside_url_base__';
     }
   });
 }

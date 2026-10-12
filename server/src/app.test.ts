@@ -28,6 +28,15 @@ describe('server core', () => {
     expect(remote.statusCode).toBe(200);
     expect(remote.json().apiKey).toBe('');
     expect(remote.body).not.toContain(t.apiKey);
+    for (const headers of [
+      { 'x-forwarded-for': '198.51.100.7' },
+      { forwarded: 'for=198.51.100.7' },
+      { 'x-real-ip': '198.51.100.7' },
+    ]) {
+      const proxied = await t.app.inject({ url: '/initialize.json', remoteAddress: '127.0.0.1', headers });
+      expect(proxied.statusCode).toBe(200);
+      expect(proxied.json().apiKey).toBe('');
+    }
   });
 
   it('generates a 32 char hex api key', async () => {
