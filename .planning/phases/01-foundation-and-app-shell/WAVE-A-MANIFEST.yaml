@@ -1,0 +1,29 @@
+wave: A
+phase: 1
+status: complete
+timestamp: "2026-10-12T23:28:07Z"
+service_groups:
+  mixed:
+    status: complete
+    plans: [01-01]
+    files: [.gitignore, README.md, package-lock.json, package.json, server/package.json, server/src/app.test.ts, server/src/app.ts, server/src/config.ts, server/src/db/index.ts, server/src/db/migrate.ts, server/src/db/migrations/0001_initial.sql, server/src/db/schema.ts, server/src/index.ts, server/src/plugins/auth.ts, server/src/routes/system.ts, server/src/test/helpers.ts, server/tsconfig.json, server/vitest.config.ts, shared/package.json, shared/src/events.ts, shared/src/index.ts, shared/src/qualities.test.ts, shared/src/qualities.ts, shared/src/schemas.ts, shared/tsconfig.json, shared/vitest.config.ts, tsconfig.base.json, web/index.html, web/package.json, web/src/App.test.tsx, web/src/App.tsx, web/src/main.tsx, web/src/styles/index.css, web/src/test/setup.ts, web/tsconfig.json, web/vite.config.ts, web/vitest.config.ts]
+  backend:
+    status: complete
+    plans: [01-02]
+    files: [server/src/app.ts, server/src/routes/command.test.ts, server/src/routes/command.ts, server/src/routes/config.test.ts, server/src/routes/config.ts, server/src/routes/events.test.ts, server/src/routes/events.ts, server/src/routes/quality.test.ts, server/src/routes/quality.ts, server/src/routes/rootfolder.test.ts, server/src/routes/rootfolder.ts, server/src/routes/tag.test.ts, server/src/routes/tag.ts, server/src/services/commands.ts, server/src/services/events.ts, server/src/services/seed.ts, shared/src/schemas.ts]
+  frontend:
+    status: complete
+    plans: [01-03, 01-04]
+    files: [web/index.html, web/src/App.test.tsx, web/src/App.tsx, web/src/components/layout/AppLayout.tsx, web/src/components/layout/CommandPalette.tsx, web/src/components/layout/Header.tsx, web/src/components/layout/Sidebar.tsx, web/src/components/layout/layout.test.tsx, web/src/components/layout/navigation.ts, web/src/components/ui/Badge.tsx, web/src/components/ui/Button.tsx, web/src/components/ui/Card.tsx, web/src/components/ui/ConfirmDialog.tsx, web/src/components/ui/EmptyState.tsx, web/src/components/ui/FormField.tsx, web/src/components/ui/Input.tsx, web/src/components/ui/Modal.tsx, web/src/components/ui/PageHeader.tsx, web/src/components/ui/Select.tsx, web/src/components/ui/Spinner.tsx, web/src/components/ui/Switch.tsx, web/src/components/ui/Table.tsx, web/src/components/ui/Toast.tsx, web/src/components/ui/index.ts, web/src/components/ui/ui.test.tsx, web/src/lib/api.test.ts, web/src/lib/api.ts, web/src/lib/cn.ts, web/src/lib/events.ts, web/src/lib/theme.ts, web/src/main.tsx, web/src/pages/NotFound.tsx, web/src/pages/Placeholder.tsx, web/src/routes.tsx, web/src/styles/index.css, web/src/pages/settings/General.tsx, web/src/pages/settings/MediaManagement.tsx, web/src/pages/settings/Profiles.tsx, web/src/pages/settings/Quality.tsx, web/src/pages/settings/QualityProfileEditor.tsx, web/src/pages/settings/SettingsIndex.tsx, web/src/pages/settings/Tags.tsx, web/src/pages/settings/UiSettings.tsx, web/src/pages/settings/hooks.ts, web/src/pages/settings/settings.test.tsx, web/src/test/server.ts]
+analysis_findings:
+  count: 21
+  by_agent:
+    engineering-backend-architect: {blockers: 1, warnings: 11}
+    engineering-security-engineer: {blockers: 2, warnings: 7}
+outputs:
+  total_files: 93
+  total_plans: 4
+  passed: 4
+  failed: 0
+gate: architecture
+gate_status: passed
