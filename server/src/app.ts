@@ -6,13 +6,24 @@ import type { HostConfig } from '@sonarr/shared';
 import { resolveDataDir } from './config.js';
 import { openDb, schema, type Db } from './db/index.js';
 import { registerAuth } from './plugins/auth.js';
+import { commandRoutes } from './routes/command.js';
+import { configRoutes } from './routes/config.js';
+import { eventRoutes } from './routes/events.js';
+import { qualityRoutes } from './routes/quality.js';
+import { rootFolderRoutes } from './routes/rootfolder.js';
 import { readVersion, systemRoutes } from './routes/system.js';
+import { tagRoutes } from './routes/tag.js';
+import { CommandQueue } from './services/commands.js';
+import { EventBus } from './services/events.js';
+import { seed } from './services/seed.js';
 
 declare module 'fastify' {
   interface FastifyInstance {
     db: Db;
     sqlite: import('better-sqlite3').Database;
     dataDir: string;
+    events: EventBus;
+    commands: CommandQueue;
   }
 }
 
@@ -50,11 +61,18 @@ export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Pr
   app.decorate('db', db);
   app.decorate('sqlite', sqlite);
   app.decorate('dataDir', dir);
+  ensureHostConfig(db);
+  seed(db);
+
+  const events = new EventBus();
+  const commands = new CommandQueue(db, events);
+  commands.register('Housekeeping', async () => {});
+  app.decorate('events', events);
+  app.decorate('commands', commands);
   app.addHook('onClose', async () => {
+    await commands.close();
     sqlite.close();
   });
-
-  ensureHostConfig(db);
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {
@@ -93,6 +111,14 @@ export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Pr
     getUrlBase: () => getHostConfig(db).urlBase,
   });
 
+  await app.register(rootFolderRoutes);
+  await app.register(tagRoutes);
+  await app.register(qualityRoutes);
+  await app.register(configRoutes);
+  await app.register(commandRoutes);
+  await app.register(eventRoutes);
+
+  commands.start();
   await app.ready();
   return app;
 }

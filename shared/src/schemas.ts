@@ -1,4 +1,9 @@
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
+
+/** Build a ZodError for a single invalid property; the server maps it to a Sonarr-style 400. */
+export function validationError(propertyName: string, message: string): ZodError {
+  return new ZodError([{ code: 'custom', path: propertyName ? propertyName.split('.') : [], message, input: undefined }]);
+}
 
 export const rootFolderInputSchema = z.object({ path: z.string().min(1) });
 export type RootFolderInput = z.infer<typeof rootFolderInputSchema>;
@@ -65,6 +70,28 @@ export const qualityProfileSchema = z
     }
   });
 export type QualityProfile = z.infer<typeof qualityProfileSchema>;
+
+/** Body for creating a profile (id optional/ignored). */
+export const qualityProfileInputSchema = z
+  .object({
+    id: z.number().int().optional(),
+    name: z.string().trim().min(1),
+    upgradeAllowed: z.boolean(),
+    cutoff: z.number().int(),
+    items: z.array(qualityProfileItemSchema),
+  })
+  .superRefine((p, ctx) => {
+    const allowed = p.items.filter((i) => i.allowed);
+    if (allowed.length === 0) {
+      ctx.addIssue({ code: 'custom', path: ['items'], message: 'At least one quality must be allowed' });
+    }
+    if (!allowed.some((i) => i.quality.id === p.cutoff)) {
+      ctx.addIssue({ code: 'custom', path: ['cutoff'], message: 'Cutoff must be an allowed quality' });
+    }
+  });
+export type QualityProfileInput = z.infer<typeof qualityProfileInputSchema>;
+
+export const commandInputSchema = z.object({ name: z.string().min(1) }).catchall(z.unknown());
 
 export const hostConfigSchema = z.object({
   id: z.literal(1),
