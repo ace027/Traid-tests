@@ -1,9 +1,26 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
     <title>Sonarr</title>
+    <script>
+      // Apply the saved theme before any CSS loads so there is no flash.
+      (function () {
+        var pref = 'system';
+        try {
+          var saved = localStorage.getItem('sonarr.theme');
+          if (saved === 'light' || saved === 'dark' || saved === 'system') pref = saved;
+        } catch (e) {}
+        var dark = true;
+        if (pref === 'light') dark = false;
+        else if (pref === 'system' && window.matchMedia) {
+          dark = !window.matchMedia('(prefers-color-scheme: light)').matches;
+        }
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

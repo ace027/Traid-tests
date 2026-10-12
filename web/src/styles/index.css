@@ -1,1 +1,181 @@
 @import 'tailwindcss';
+
+/* `dark:` follows the resolved theme on <html data-theme>, not the OS. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Semantic design tokens. Components use only these utilities
+ * (bg-surface, text-muted, border-border, bg-accent, ...), so a theme is a
+ * set of CSS variables and nothing else.
+ */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-overlay: var(--overlay);
+  --color-ring: var(--ring);
+
+  --font-sans: 'Inter', 'InterVariable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.08);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.14), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 0.28), 0 4px 12px -4px rgb(0 0 0 / 0.12);
+}
+
+/* Dark is the default palette: deep slate with a Sonarr-cyan accent. */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --surface: #0f1420;
+  --surface-raised: #161d2c;
+  --surface-sunken: #0a0e17;
+  --surface-hover: #1e2738;
+  --border: #263044;
+  --border-strong: #36425c;
+  --text: #e6eaf2;
+  --text-muted: #9aa5ba;
+  --text-subtle: #7d889e;
+  --accent: #35c5f4;
+  --accent-hover: #5fd3f7;
+  --accent-soft: rgb(53 197 244 / 0.14);
+  --accent-foreground: #04131b;
+  --success: #3fcf8e;
+  --success-soft: rgb(63 207 142 / 0.15);
+  --warning: #f5b84a;
+  --warning-soft: rgb(245 184 74 / 0.15);
+  --danger: #f87171;
+  --danger-hover: #fa8f8f;
+  --danger-soft: rgb(248 113 113 / 0.15);
+  --info: #8b9cff;
+  --info-soft: rgb(139 156 255 / 0.15);
+  --overlay: rgb(3 6 12 / 0.7);
+  --ring: #5fd3f7;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --surface: #f6f7fb;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eceff5;
+  --surface-hover: #e7ebf3;
+  --border: #dbe0ea;
+  --border-strong: #c3cad8;
+  --text: #121826;
+  --text-muted: #4f5a6e;
+  --text-subtle: #626d82;
+  --accent: #0a7fb0;
+  --accent-hover: #086b95;
+  --accent-soft: rgb(10 127 176 / 0.1);
+  --accent-foreground: #ffffff;
+  --success: #12804f;
+  --success-soft: rgb(18 128 79 / 0.1);
+  --warning: #9a5b00;
+  --warning-soft: rgb(154 91 0 / 0.1);
+  --danger: #c42b2b;
+  --danger-hover: #a82222;
+  --danger-soft: rgb(196 43 43 / 0.1);
+  --info: #4453c9;
+  --info-soft: rgb(68 83 201 / 0.1);
+  --overlay: rgb(15 20 32 / 0.45);
+  --ring: #0a7fb0;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--surface);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--surface);
+    color: var(--text);
+  }
+
+  ::selection {
+    background-color: var(--accent-soft);
+  }
+
+  /* One consistent, highly visible keyboard focus indicator everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility focus-ring {
+  outline: none;
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility animate-fade-in {
+  animation: fade-in 150ms ease-out;
+}
+
+@utility animate-pop-in {
+  animation: pop-in 180ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
