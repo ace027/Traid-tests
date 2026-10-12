@@ -1,9 +1,0 @@
-wave: A
-phase: 1
-status: failed
-timestamp: "2026-10-10T16:03:30Z"
-service_groups:
-  default:
-    status: failed
-    plans: [01-04]
-    files: []
