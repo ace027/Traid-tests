@@ -2,8 +2,8 @@
 
 ## Current Position
 - **Phase**: 1 of 5 (executed, pending review)
-- **Status**: Phase 1 under review — cycle 2/3, 0 blocker(s) remaining
-- **Last Activity**: Phase 1 review cycle 2 (2026-10-12)
+- **Status**: Phase 1 review escalated — 3 unresolved finding(s) (1 blocker/critical) after 3 cycles
+- **Last Activity**: Phase 1 review (2026-10-12)
 
 ## Progress
 ```
@@ -19,7 +19,7 @@
 - Assumed: SSE for realtime events instead of SignalR
 
 ## Next Action
-Run `/triad:review` to verify Phase 1: Foundation and App Shell
+Fix the unresolved findings in 01-REVIEW.md, accept the phase as is, or re-plan; then run `/triad:review --phase 1`
 
 ## Phase 1 Results
 (build started 2026-10-12)
