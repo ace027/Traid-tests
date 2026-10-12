@@ -4,7 +4,7 @@ import { createTestApp, type TestApp } from '../test/helpers.js';
 
 describe('EventBus', () => {
   it('assigns increasing ids and timestamps', () => {
-    const bus = new EventBus();
+    const bus = new EventBus(1);
     const a = bus.publish('tag', 'created', { id: 1 });
     const b = bus.publish('tag', 'deleted');
     expect(b.id).toBe(a.id + 1);
@@ -13,7 +13,7 @@ describe('EventBus', () => {
   });
 
   it('caps the ring buffer at 500 and supports since()', () => {
-    const bus = new EventBus();
+    const bus = new EventBus(1);
     for (let i = 0; i < 600; i++) bus.publish('x', 'sync');
     const all = bus.since(0);
     expect(all).toHaveLength(500);
@@ -23,7 +23,7 @@ describe('EventBus', () => {
   });
 
   it('unsubscribes and isolates throwing listeners', () => {
-    const bus = new EventBus();
+    const bus = new EventBus(1);
     const seen: number[] = [];
     bus.subscribe(() => {
       throw new Error('boom');
@@ -97,6 +97,17 @@ describe('GET /api/v3/events', () => {
     ctl2.abort();
     for (let i = 0; i < 100 && t.app.events.listenerCount > 0; i++) await new Promise((r) => setTimeout(r, 20));
     expect(t.app.events.listenerCount).toBe(0);
+  });
+
+  it('replays events to a client reconnecting with a pre-restart Last-Event-ID', async () => {
+    t = await createTestApp();
+    const base = await t.app.listen({ port: 0, host: '127.0.0.1' });
+    await t.app.inject({ method: 'POST', url: '/api/v3/tag', headers: { 'x-api-key': t.apiKey }, payload: { label: 'after-restart' } });
+    const ctl = new AbortController();
+    const res = await fetch(`${base}/api/v3/events`, { headers: { 'x-api-key': t.apiKey, 'last-event-id': '40' }, signal: ctl.signal });
+    const text = await readUntil(res, (s) => s.includes('data:'));
+    expect(text).toContain('after-restart');
+    ctl.abort();
   });
 
   it('accepts the apikey query param and publishes update/delete events', async () => {

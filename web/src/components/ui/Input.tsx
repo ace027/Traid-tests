@@ -6,8 +6,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const inputClasses =
-  'focus-ring block w-full rounded-md border border-border bg-surface-sunken px-3 h-10 text-sm text-text ' +
-  'placeholder:text-text-subtle transition-colors hover:border-border-strong ' +
+  'focus-ring block w-full rounded-md border border-control-border bg-surface-sunken px-3 h-10 text-sm text-text ' +
+  'placeholder:text-text-subtle transition-colors hover:border-text-muted ' +
   'disabled:cursor-not-allowed disabled:opacity-60 read-only:bg-surface ' +
   'aria-[invalid=true]:border-danger';
 

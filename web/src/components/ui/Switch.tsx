@@ -26,7 +26,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       className={cn(
         'focus-ring relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition-colors duration-150',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        checked ? 'border-accent bg-accent' : 'border-border-strong bg-surface-sunken',
+        checked ? 'border-accent bg-accent' : 'border-control-border bg-surface-sunken',
         className,
       )}
       {...rest}

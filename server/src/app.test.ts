@@ -19,11 +19,15 @@ describe('server core', () => {
     expect(res.json()).toEqual({ status: 'OK' });
   });
 
-  it('GET /initialize.json exposes the key', async () => {
+  it('GET /initialize.json gives the key to loopback clients only', async () => {
     t = await createTestApp();
-    const res = await t.app.inject({ url: '/initialize.json' });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().apiKey).toBe(t.apiKey);
+    const local = await t.app.inject({ url: '/initialize.json', remoteAddress: '127.0.0.1' });
+    expect(local.statusCode).toBe(200);
+    expect(local.json().apiKey).toBe(t.apiKey);
+    const remote = await t.app.inject({ url: '/initialize.json', remoteAddress: '203.0.113.5' });
+    expect(remote.statusCode).toBe(200);
+    expect(remote.json().apiKey).toBe('');
+    expect(remote.body).not.toContain(t.apiKey);
   });
 
   it('generates a 32 char hex api key', async () => {

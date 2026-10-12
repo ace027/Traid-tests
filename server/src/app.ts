@@ -93,10 +93,14 @@ export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Pr
   registerAuth(app, () => getHostConfig(db).apiKey);
 
   app.get('/ping', async () => ({ status: 'OK' }));
-  app.get('/initialize.json', async () => {
+  // The bootstrap endpoint is unauthenticated, so the API key is only disclosed to
+  // loopback clients (the local UI). Remote callers get the public fields only.
+  const isLoopback = (ip: string) =>
+    ip === '::1' || ip === '127.0.0.1' || ip.startsWith('::ffff:127.') || ip.startsWith('127.');
+  app.get('/initialize.json', async (request) => {
     const host = getHostConfig(db);
     return {
-      apiKey: host.apiKey,
+      apiKey: isLoopback(request.ip) ? host.apiKey : '',
       urlBase: host.urlBase,
       instanceName: host.instanceName,
       version: readVersion(),

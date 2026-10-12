@@ -44,15 +44,52 @@ export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobil
     closeRef.current();
   }, [pathname]);
 
-  // Escape closes the drawer; focus moves into it when it opens.
+  // While the drawer is open: move focus in, trap Tab, close on Escape, make the
+  // rest of the page inert, and restore focus to the opener on close.
   useEffect(() => {
     if (!mobileOpen) return;
-    panelRef.current?.querySelector<HTMLElement>('a[href], button')?.focus();
+    const panel = panelRef.current;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusables = () =>
+      Array.from(panel?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? []);
+    focusables()[0]?.focus();
+
+    const inerted: HTMLElement[] = [];
+    Array.from(panel?.parentElement?.children ?? []).forEach((el) => {
+      if (el === panel || !(el instanceof HTMLElement)) return;
+      if (el.dataset.testid === 'sidebar-overlay' || el.hasAttribute('inert')) return;
+      el.setAttribute('inert', '');
+      inerted.push(el);
+    });
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeRef.current();
+      if (e.key === 'Escape') {
+        closeRef.current();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const active = document.activeElement;
+      if (!panel?.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      } else if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      inerted.forEach((el) => el.removeAttribute('inert'));
+      if (opener?.isConnected) opener.focus();
+    };
   }, [mobileOpen]);
 
   return (

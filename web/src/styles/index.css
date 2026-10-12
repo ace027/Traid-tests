@@ -15,6 +15,7 @@
   --color-surface-hover: var(--surface-hover);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-control-border: var(--control-border);
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
   --color-text-subtle: var(--text-subtle);
@@ -58,6 +59,7 @@
   --surface-hover: #1e2738;
   --border: #263044;
   --border-strong: #36425c;
+  --control-border: #6b7a96;
   --text: #e6eaf2;
   --text-muted: #9aa5ba;
   --text-subtle: #7d889e;
@@ -86,6 +88,7 @@
   --surface-hover: #e7ebf3;
   --border: #dbe0ea;
   --border-strong: #c3cad8;
+  --control-border: #76829a;
   --text: #121826;
   --text-muted: #4f5a6e;
   --text-subtle: #626d82;

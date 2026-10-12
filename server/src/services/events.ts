@@ -5,9 +5,15 @@ export type EventListener = (event: ServerEvent) => void;
 const BUFFER_SIZE = 500;
 
 export class EventBus {
-  private nextId = 1;
+  private nextId: number;
   private buffer: ServerEvent[] = [];
   private listeners = new Set<EventListener>();
+
+  // Ids are seeded from the clock so they stay unique across restarts; a client
+  // reconnecting with a pre-restart Last-Event-ID then never exceeds the counter.
+  constructor(startId: number = Date.now()) {
+    this.nextId = startId;
+  }
 
   publish(name: string, action: ServerEventAction, resource?: Record<string, unknown>): ServerEvent {
     const event: ServerEvent = { id: this.nextId++, name, action, at: new Date().toISOString() };
