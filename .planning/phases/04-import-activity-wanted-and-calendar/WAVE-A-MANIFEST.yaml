@@ -1,0 +1,13 @@
+wave: A
+phase: 4
+status: failed
+timestamp: "2026-10-13T03:01:48Z"
+service_groups:
+  backend:
+    status: complete
+    plans: [04-01, 04-02, 04-03]
+    files: [server/src/app.ts, server/src/naming/naming.test.ts, server/src/naming/naming.ts, server/src/naming/tokens.ts, server/src/routes/calendar.ts, server/src/routes/manualimport.ts, server/src/routes/mediaConfig.test.ts, server/src/routes/mediaConfig.ts, server/src/routes/rename.ts, server/src/routes/wanted.ts, server/src/services/mediaConfig.ts, server/src/services/series.ts, shared/src/index.ts, shared/src/mediaManagement.ts, server/src/decision/specifications.ts, server/src/import/decisions.ts, server/src/import/importer.test.ts, server/src/import/importer.ts, server/src/import/transfer.ts, server/src/import/types.ts, server/src/routes/manualimport.test.ts, server/src/services/diskScan.ts, server/src/services/downloadHandling.test.ts, server/src/services/downloadHandling.ts, server/src/services/episodeFiles.ts, server/src/services/queue.ts, server/src/services/rename.ts, server/src/test/e2e.test.ts, server/src/routes/calendar.test.ts, server/src/routes/wanted.test.ts, server/src/services/ical.ts, server/src/services/wanted.ts]
+  frontend:
+    status: partial
+    plans: [04-04, 04-05]
+    files: [web/src/components/layout/layout.test.tsx, web/src/lib/api.ts, web/src/lib/events.ts, web/src/pages/activity/Blocklist.tsx, web/src/pages/activity/History.tsx, web/src/pages/activity/history.test.tsx, web/src/pages/activity/historyHooks.ts, web/src/pages/calendar/AgendaView.tsx, web/src/pages/calendar/Calendar.tsx, web/src/pages/calendar/ICalModal.tsx, web/src/pages/calendar/MonthView.tsx, web/src/pages/calendar/WeekView.tsx, web/src/pages/calendar/calendar.test.tsx, web/src/pages/calendar/hooks.ts, web/src/pages/wanted/CutoffUnmet.tsx, web/src/pages/wanted/Missing.tsx, web/src/pages/wanted/WantedTable.tsx, web/src/pages/wanted/hooks.ts, web/src/pages/wanted/wanted.test.tsx, web/src/routes.tsx, web/src/pages/activity/ManualImportModal.tsx, web/src/pages/activity/Queue.tsx, web/src/pages/activity/manualImport.test.tsx, web/src/pages/series/RenamePreviewModal.tsx, web/src/pages/series/SeriesDetail.tsx, web/src/pages/series/rename.test.tsx, web/src/pages/settings/DownloadClients.tsx, web/src/pages/settings/MediaManagement.tsx, web/src/pages/settings/NamingSettings.tsx, web/src/pages/settings/mediaHooks.ts, web/src/pages/settings/mediaManagement.test.tsx]
