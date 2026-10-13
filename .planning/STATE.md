@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Position
-- **Phase**: 4 of 5 (planned)
-- **Status**: Phase 4 planned -- 5 plans across 2 waves
-- **Last Activity**: Phase 4 planning (2026-10-13)
+- **Phase**: 4 of 5 (executing)
+- **Status**: Phase 4 executing — Plan 04-01 complete
+- **Last Activity**: Plan 04-01 execution (2026-10-13)
 
 ## Progress
 ```
-[#############.......] 65% — 13/20 plans complete
+[#############.......] 66% — 14/21 plans complete
 ```
 
 ## Recent Decisions
@@ -45,3 +45,7 @@ Run `/triad:build` to execute Phase 4: Import, Activity, Wanted and Calendar
 - Plan 03-03 (Wave 2): Download clients and queue tracking — Complete
 - Plan 03-05 (Wave 2): Indexer, download client, queue and interactive search UI — Complete with Warnings
 - Plan 03-04 (Wave 3): Decision engine, search, RSS sync and grabbing — Complete
+
+## Phase 4 Results
+(build started 2026-10-13)
+- Plan 04-01 (Wave 1): Phase 4 foundations: settings, naming engine and shared types — Complete
