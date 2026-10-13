@@ -29,8 +29,7 @@ function Logo({ collapsed }: { collapsed: boolean }) {
       >
         S
       </span>
-      <span className={cn('text-lg font-semibold tracking-tight', collapsed && 'md:sr-only')}>Sonarr</span>
-      <span className="sr-only"> home</span>
+      <span className={cn('text-lg font-semibold tracking-tight', collapsed && 'md:sr-only')}>Sonarr{' '}<span className="sr-only">home</span></span>
     </Link>
   );
 }
