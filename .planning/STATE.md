@@ -2,12 +2,12 @@
 
 ## Current Position
 - **Phase**: 4 of 5 (executing)
-- **Status**: Phase 4 executing — Plan 04-01 complete
-- **Last Activity**: Plan 04-01 execution (2026-10-13)
+- **Status**: Phase 4 executing — Plan 04-05 failed
+- **Last Activity**: Plan 04-05 execution (2026-10-13)
 
 ## Progress
 ```
-[#############.......] 66% — 14/21 plans complete
+[################....] 80% — 17/21 plans complete
 ```
 
 ## Recent Decisions
@@ -49,3 +49,7 @@ Run `/triad:build` to execute Phase 4: Import, Activity, Wanted and Calendar
 ## Phase 4 Results
 (build started 2026-10-13)
 - Plan 04-01 (Wave 1): Phase 4 foundations: settings, naming engine and shared types — Complete
+- Plan 04-02 (Wave 2): Import pipeline, completed and failed download handling, manual import and rename — Complete with Warnings
+- Plan 04-03 (Wave 2): Wanted, calendar and iCal feed APIs — Complete
+- Plan 04-04 (Wave 2): History, Blocklist, Wanted and Calendar pages — Complete
+- Plan 04-05 (Wave 2): Media management settings, manual import and rename UI — PARTIAL: All three tasks are implemented and their targeted tests pass (18 tests). The full typecheck, full web suite and build are blocked by something outside this plan. web/src/routes.tsx imports ./pages/ca
