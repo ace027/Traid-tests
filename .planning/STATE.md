@@ -2,8 +2,8 @@
 
 ## Current Position
 - **Phase**: 2 of 5 (executing)
-- **Status**: Phase 2 executing — Plan 02-02 complete
-- **Last Activity**: Plan 02-02 execution (2026-10-13)
+- **Status**: Phase 2 executing — Plan 02-01 failed
+- **Last Activity**: Plan 02-01 execution (2026-10-13)
 
 ## Progress
 ```
@@ -33,3 +33,4 @@ Run `/triad:build` to execute Phase 2: Series Library
 (build started 2026-10-13)
 - Plan 02-01 (Wave 1): Series data model, TVmaze provider and series API — PARTIAL: Schema, shared types and monitoring, TVmaze provider with fake, and the /api/v3/series service and routes are all done and tested. Two stale assertions in server/src/app.test.ts fail, and that file is
 - Plan 02-02 (Wave 1): Filename and release title parser — Complete
+- Plan 02-01 (Wave 1): Series data model, TVmaze provider and series API — PARTIAL: All three tasks are implemented on disk. Typecheck passes, shared tests pass (12), and every series and tvmaze test passes. Full server suite has 2 failures (254 of 256 pass) in server/src/app.test.ts
