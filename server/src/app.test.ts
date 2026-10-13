@@ -73,7 +73,7 @@ describe('server core', () => {
   it('records each migration once', async () => {
     t = await createTestApp();
     const rows = t.app.sqlite.prepare('select version from schema_migrations').all();
-    expect(rows).toEqual([{ version: '0001_initial' }, { version: '0002_auth' }]);
+    expect(rows).toEqual([{ version: '0001_initial' }, { version: '0002_auth' }, { version: '0003_series' }]);
   });
 
   it('keeps the api key across restarts and creates a missing data dir', async () => {
@@ -86,7 +86,7 @@ describe('server core', () => {
       const b = await buildApp({ dataDir: dir });
       expect(getHostConfig(b.db).apiKey).toBe(key);
       const rows = b.sqlite.prepare('select count(*) as n from schema_migrations').get();
-      expect(rows).toEqual({ n: 2 });
+      expect(rows).toEqual({ n: 3 });
       await b.close();
     } finally {
       fs.rmSync(base, { recursive: true, force: true });
