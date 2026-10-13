@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTestApp, type TestApp } from '../test/helpers.js';
 
 let t: TestApp | undefined;
 const tmp: string[] = [];
 afterEach(async () => {
+  vi.restoreAllMocks();
   await t?.cleanup();
   for (const d of tmp.splice(0)) fs.rmSync(d, { recursive: true, force: true });
   t = undefined;
@@ -133,13 +134,14 @@ describe('disk scan', () => {
     expect(linked(series.id).filter((e) => e.f !== null)).toHaveLength(1);
   });
 
-  it('keeps file rows when the series folder cannot be read', async () => {
+  const isRoot = process.getuid?.() === 0;
+
+  it.skipIf(isRoot)('keeps file rows when the series folder cannot be read (permissions)', async () => {
     const { series } = await setup();
     write(series.path, 'Show.S01E01.mkv');
     await rescan(series.id);
     fs.chmodSync(series.path, 0o000);
     try {
-      if (process.getuid?.() === 0) return; // root bypasses permissions
       const cmd = await rescan(series.id);
       expect(cmd.status).toBe('failed');
       expect(files(series.id)).toHaveLength(1);
@@ -148,20 +150,59 @@ describe('disk scan', () => {
     }
   });
 
+  it('keeps file rows when the series folder cannot be opened', async () => {
+    const { series } = await setup();
+    write(series.path, 'Show.S01E01.mkv');
+    await rescan(series.id);
+    const orig = fs.promises.opendir.bind(fs.promises);
+    vi.spyOn(fs.promises, 'opendir').mockImplementation(async (p, o) => {
+      if (String(p) === series.path) throw Object.assign(new Error('EACCES'), { code: 'EACCES' });
+      return orig(p, o);
+    });
+    const cmd = await rescan(series.id);
+    expect(cmd.status).toBe('failed');
+    expect(cmd.message).toContain('could not be read');
+    expect(files(series.id)).toHaveLength(1);
+  });
+
   it('keeps file rows under a subfolder that cannot be read', async () => {
     const { series } = await setup();
     write(series.path, 'Season 1/Show.S01E01.mkv');
     await rescan(series.id);
+    const before = files(series.id);
     const sub = path.join(series.path, 'Season 1');
-    fs.chmodSync(sub, 0o000);
-    try {
-      if (process.getuid?.() === 0) return; // root bypasses permissions
-      await rescan(series.id);
-      expect(files(series.id)).toHaveLength(1);
-      expect(linked(series.id).filter((e) => e.f !== null)).toHaveLength(1);
-    } finally {
-      fs.chmodSync(sub, 0o755);
-    }
+    const orig = fs.promises.opendir.bind(fs.promises);
+    vi.spyOn(fs.promises, 'opendir').mockImplementation(async (p, o) => {
+      if (String(p) === sub) throw Object.assign(new Error('EACCES'), { code: 'EACCES' });
+      return orig(p, o);
+    });
+    const cmd = await rescan(series.id);
+    expect(cmd.status).toBe('completed');
+    expect(cmd.message).toContain('0 removed');
+    expect(files(series.id)).toEqual(before);
+    const l = linked(series.id).filter((e) => e.f !== null);
+    expect(l).toHaveLength(1);
+    expect(l[0]!.f).toBe(before[0]!.id);
+  });
+
+  it('keeps a file row when stat on that file fails', async () => {
+    const { series } = await setup();
+    const full = write(series.path, 'Show.S01E01.mkv');
+    write(series.path, 'Show.S01E02.mkv');
+    await rescan(series.id);
+    const before = files(series.id);
+    expect(before).toHaveLength(2);
+    const orig = fs.promises.stat.bind(fs.promises) as (...a: unknown[]) => Promise<fs.Stats>;
+    vi.spyOn(fs.promises, 'stat').mockImplementation((async (p: fs.PathLike, ...rest: unknown[]) => {
+      if (String(p) === full) throw Object.assign(new Error('EIO'), { code: 'EIO' });
+      return orig(p, ...rest);
+    }) as typeof fs.promises.stat);
+    const cmd = await rescan(series.id);
+    expect(cmd.status).toBe('completed');
+    expect(cmd.message).toContain('0 removed');
+    expect(files(series.id)).toEqual(before);
+    const l = linked(series.id).filter((e) => e.f !== null);
+    expect(l.map((e) => e.f).sort()).toEqual(before.map((f) => f.id).sort());
   });
 
   it('does not follow symlinks that leave the series folder, nor loops', async () => {
