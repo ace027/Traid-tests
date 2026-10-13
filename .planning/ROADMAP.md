@@ -72,5 +72,5 @@
 | 1 | 4 | 4 | Complete |
 | 2 | 4 | 4 | Complete |
 | 3 | 5 | 5 | Complete |
-| 4 | 4 | 0 | Pending |
+| 4 | 5 | 0 | Planned |
 | 5 | 3 | 0 | Pending |
