@@ -56,6 +56,7 @@ interface WalkResult {
   files: string[];
   truncated: boolean;
   rootUnreadable: boolean;
+  unreadableDirs: string[];
 }
 
 async function walk(base: string, realBase: string): Promise<WalkResult> {
@@ -63,6 +64,7 @@ async function walk(base: string, realBase: string): Promise<WalkResult> {
   let entries = 0;
   let truncated = false;
   let rootUnreadable = false;
+  const unreadableDirs: string[] = [];
   const visited = new Set<string>([realBase]);
   const stack: { logical: string; real: string; depth: number }[] = [{ logical: base, real: realBase, depth: 0 }];
   while (stack.length && !truncated) {
@@ -72,6 +74,7 @@ async function walk(base: string, realBase: string): Promise<WalkResult> {
       handle = await fs.promises.opendir(dir.logical);
     } catch {
       if (dir.depth === 0) rootUnreadable = true;
+      else unreadableDirs.push(dir.logical);
       continue;
     }
     try {
@@ -112,7 +115,7 @@ async function walk(base: string, realBase: string): Promise<WalkResult> {
     }
   }
   files.sort();
-  return { files, truncated, rootUnreadable };
+  return { files, truncated, rootUnreadable, unreadableDirs };
 }
 
 function fileMissing(p: string): boolean {
@@ -153,7 +156,7 @@ export async function scanSeries(app: FastifyInstance, seriesId: number): Promis
     throw new Error('Series folder is outside root folders');
   }
 
-  const { files, truncated, rootUnreadable } = await walk(series.path, realBase);
+  const { files, truncated, rootUnreadable, unreadableDirs } = await walk(series.path, realBase);
   if (rootUnreadable && existingFiles.length > 0) {
     throw new Error(`Series folder could not be read: ${series.path}`);
   }
@@ -182,11 +185,13 @@ export async function scanSeries(app: FastifyInstance, seriesId: number): Promis
 
   const rel = (f: string) => path.relative(series.path, f);
   const candidates: Candidate[] = [];
+  const statFailed = new Set<string>();
   for (const file of files) {
     let size: number;
     try {
       size = (await fs.promises.stat(file)).size;
     } catch {
+      statFailed.add(file); // transient? keep any existing row
       continue;
     }
     const p = parseFile(file);
@@ -288,6 +293,8 @@ export async function scanSeries(app: FastifyInstance, seriesId: number): Promis
     for (const f of existingFiles) {
       if (acceptedPaths.has(f.path)) continue;
       if (result.truncated && !fileMissing(f.path)) continue;
+      // unreadable subtree or failed stat: state unknown, never drop the row
+      if (statFailed.has(f.path) || unreadableDirs.some((d) => f.path.startsWith(d + path.sep))) continue;
       tx.update(schema.episodes).set({ episodeFileId: null }).where(eq(schema.episodes.episodeFileId, f.id)).run();
       tx.delete(schema.episodeFiles).where(eq(schema.episodeFiles.id, f.id)).run();
       result.removed++;

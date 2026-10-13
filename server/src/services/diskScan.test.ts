@@ -148,6 +148,22 @@ describe('disk scan', () => {
     }
   });
 
+  it('keeps file rows under a subfolder that cannot be read', async () => {
+    const { series } = await setup();
+    write(series.path, 'Season 1/Show.S01E01.mkv');
+    await rescan(series.id);
+    const sub = path.join(series.path, 'Season 1');
+    fs.chmodSync(sub, 0o000);
+    try {
+      if (process.getuid?.() === 0) return; // root bypasses permissions
+      await rescan(series.id);
+      expect(files(series.id)).toHaveLength(1);
+      expect(linked(series.id).filter((e) => e.f !== null)).toHaveLength(1);
+    } finally {
+      fs.chmodSync(sub, 0o755);
+    }
+  });
+
   it('does not follow symlinks that leave the series folder, nor loops', async () => {
     const { series } = await setup();
     const outside = mktmp('sonarr-out-');
