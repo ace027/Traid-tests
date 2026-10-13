@@ -24,3 +24,4 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-015 | 2026-10-13 | Sonarr-replica | 2 | 02-01 | engineering-backend-architect | implementation | failed | 5 | series-library, engineering | Series data model, TVmaze provider and series API: Partial |
 | O-016 | 2026-10-13 | Sonarr-replica | 2 | 02-01 | engineering-backend-architect | implementation | success | 2 | series-library, engineering | Series data model, TVmaze provider and series API: Complete |
 | O-017 | 2026-10-13 | Sonarr-replica | 2 | 02-03 | engineering-backend-architect | implementation | partial | 3 | series-library, engineering | Episodes API, refresh and disk scan commands, library import: Complete with Warnings |
+| O-018 | 2026-10-13 | Sonarr-replica | 2 | 02-04 | engineering-frontend-developer | implementation | success | 2 | series-library, engineering | Series UI: add, library import, index and detail: Complete |

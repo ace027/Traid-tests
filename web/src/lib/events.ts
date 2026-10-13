@@ -21,6 +21,9 @@ export const eventQueryKeys: Record<string, readonly QueryKey[]> = {
   uiconfig: [queryKeys.uiConfig],
   'config/ui': [queryKeys.uiConfig],
   ui: [queryKeys.uiConfig],
+  series: [queryKeys.series],
+  episode: [['episode']],
+  episodefile: [['episodefile'], queryKeys.series],
 };
 
 export const RECONNECT_MIN_MS = 1000;

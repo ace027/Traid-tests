@@ -236,4 +236,9 @@ export const queryKeys = {
   commands: ['command'] as const,
   command: (id: number) => ['command', id] as const,
   systemStatus: ['system', 'status'] as const,
+  series: ['series'] as const,
+  seriesDetail: (id: number) => ['series', id] as const,
+  seriesLookup: (term: string) => ['series', 'lookup', term] as const,
+  episodes: (seriesId: number) => ['episode', seriesId] as const,
+  episodeFiles: (seriesId: number) => ['episodefile', seriesId] as const,
 } as const;

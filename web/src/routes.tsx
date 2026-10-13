@@ -15,9 +15,13 @@ import { Quality } from './pages/settings/Quality';
 import { Tags } from './pages/settings/Tags';
 import { General } from './pages/settings/General';
 import { UiSettings } from './pages/settings/UiSettings';
+import { SeriesIndex } from './pages/series/SeriesIndex';
+import { AddNew } from './pages/series/AddNew';
+import { LibraryImport } from './pages/series/LibraryImport';
+import { SeriesDetail } from './pages/series/SeriesDetail';
 
 /**
- * Settings pages fetch with TanStack Query. App provides the shared client; this
+ * Series and settings pages fetch with TanStack Query. App provides the shared client; this
  * only supplies a private one when the routes are rendered without it (tests, embeds).
  */
 function EnsureQueryClient({ children }: { children: ReactNode }) {
@@ -49,7 +53,17 @@ export const settingsRoutes: RouteObject[] = [
   { path: 'ui', element: withQuery(<UiSettings />) },
 ];
 
-/** Placeholder routes for every non-settings nav path. */
+/** Real pages for nav paths; every other non-settings nav path is a placeholder. */
+const pages: Record<string, ReactNode> = {
+  '/': withQuery(<SeriesIndex />),
+  '/add/new': withQuery(<AddNew />),
+  '/add/import': withQuery(<LibraryImport />),
+};
+
+/** Series routes that are not in the navigation. */
+export const seriesRoutes: RouteObject[] = [{ path: 'series/:titleSlug', element: withQuery(<SeriesDetail />) }];
+
+/** Routes for every non-settings nav path (real page or placeholder). */
 function sectionRoutes(): RouteObject[] {
   const routes: RouteObject[] = [];
   const seen = new Set<string>();
@@ -58,11 +72,8 @@ function sectionRoutes(): RouteObject[] {
     for (const entry of [{ label: section.label, path: section.path }, ...(section.children ?? [])]) {
       if (seen.has(entry.path)) continue;
       seen.add(entry.path);
-      routes.push(
-        entry.path === '/'
-          ? { index: true, element: placeholder(entry.label) }
-          : { path: entry.path.slice(1), element: placeholder(entry.label) },
-      );
+      const element = pages[entry.path] ?? placeholder(entry.label);
+      routes.push(entry.path === '/' ? { index: true, element } : { path: entry.path.slice(1), element });
     }
   }
   return routes;
@@ -81,6 +92,7 @@ export const routes: RouteObject[] = [
     ),
     children: [
       ...sectionRoutes(),
+      ...seriesRoutes,
       { path: 'settings', children: settingsRoutes },
       { path: '*', element: <NotFound /> },
     ],

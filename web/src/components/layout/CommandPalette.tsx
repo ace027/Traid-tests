@@ -1,8 +1,11 @@
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useContext, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CornerDownLeft, Search } from 'lucide-react';
+import { QueryClientContext } from '@tanstack/react-query';
+import { CornerDownLeft, Search, Tv } from 'lucide-react';
+import type { Series } from '@sonarr/shared';
 import { Modal } from '../ui/Modal';
 import { cn } from '../../lib/cn';
+import { queryKeys } from '../../lib/api';
 import { flattenNavigation, type NavEntry } from './navigation';
 
 export interface CommandPaletteProps {
@@ -19,15 +22,33 @@ function matches(entry: NavEntry, query: string): boolean {
   return q.split(/\s+/).every((word) => hay.includes(word));
 }
 
+/**
+ * Series already in the query cache, as palette entries. Read once when the palette
+ * opens; never fetches, and works without a QueryClientProvider (returns []).
+ */
+function useCachedSeriesEntries(): NavEntry[] {
+  const client = useContext(QueryClientContext);
+  return useMemo(() => {
+    const list = client?.getQueryData<Series[]>(queryKeys.series) ?? [];
+    return [...list]
+      .sort((a, b) => (a.sortTitle || a.title).localeCompare(b.sortTitle || b.title))
+      .map((s) => ({ label: s.title, section: 'Series', path: `/series/${s.titleSlug}`, icon: Tv }));
+  }, [client]);
+}
+
 function PaletteBody({ onClose, extraEntries }: Omit<CommandPaletteProps, 'open'>) {
   const navigate = useNavigate();
+  const seriesEntries = useCachedSeriesEntries();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
 
-  const all = useMemo(() => [...flattenNavigation(), ...(extraEntries ?? [])], [extraEntries]);
+  const all = useMemo(
+    () => [...flattenNavigation(), ...seriesEntries, ...(extraEntries ?? [])],
+    [seriesEntries, extraEntries],
+  );
   const results = useMemo(() => all.filter((e) => matches(e, query)), [all, query]);
   const activeIndex = Math.min(active, Math.max(results.length - 1, 0));
   const optionId = (i: number) => `${listId}-opt-${i}`;
@@ -122,7 +143,7 @@ function PaletteBody({ onClose, extraEntries }: Omit<CommandPaletteProps, 'open'
   );
 }
 
-/** Ctrl/Cmd+K palette that jumps to any page. */
+/** Ctrl/Cmd+K palette that jumps to any page or any series in the library. */
 export function CommandPalette({ open, onClose, extraEntries }: CommandPaletteProps) {
   return (
     <Modal open={open} onClose={onClose} title="Go to page" hideTitle size="lg" position="top" className="overflow-hidden">
