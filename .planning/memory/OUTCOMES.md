@@ -51,3 +51,5 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-042 | 2026-10-13 | Sonarr-replica | 5 | 05-01 | engineering-senior-developer | implementation | success | 2 | connections-system-and-polish, engineering | Phase 5 foundations: schema, types, logging, health, static UI and web plumbing: Complete |
 | O-043 | 2026-10-13 | Sonarr-replica | 5 | 05-02 | engineering-backend-architect | implementation | success | 2 | connections-system-and-polish, engineering | Notifications: Webhook, Discord and Email: Complete |
 | O-044 | 2026-10-13 | Sonarr-replica | 5 | 05-03 | engineering-backend-architect | implementation | success | 2 | connections-system-and-polish, engineering | Backups, restore, restart and housekeeping: Complete |
+| O-045 | 2026-10-13 | Sonarr-replica | 5 | 05-04 | engineering-frontend-developer | implementation | failed | 5 | connections-system-and-polish, engineering | System pages: Partial |
+| O-046 | 2026-10-13 | Sonarr-replica | 5 | 05-05 | engineering-frontend-developer | implementation | success | 2 | connections-system-and-polish, engineering | Connect settings and live command activity: Complete |

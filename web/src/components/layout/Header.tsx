@@ -5,6 +5,7 @@ import { useTheme, type ThemePreference } from '../../lib/theme';
 import { useConnectionStatus, type ConnectionStatus } from '../../lib/events';
 import { loadInitialize, logout, redirectToLogin, type InitializeConfig } from '../../lib/api';
 import { SIDEBAR_ID } from './Sidebar';
+import { CommandActivity } from './CommandActivity';
 
 export interface HeaderProps {
   mobileNavOpen: boolean;
@@ -126,7 +127,7 @@ function ThemeMenu() {
 
 const statusStyles: Record<ConnectionStatus, { dot: string; label: string }> = {
   connected: { dot: 'bg-success', label: 'Live' },
-  connecting: { dot: 'bg-warning animate-pulse', label: 'Connecting' },
+  connecting: { dot: 'bg-warning animate-pulse', label: 'Reconnecting...' },
   disconnected: { dot: 'bg-danger', label: 'Offline' },
 };
 
@@ -209,6 +210,7 @@ export function Header({ mobileNavOpen, onOpenMobileNav, onOpenPalette }: Header
       </button>
 
       <div className="ml-auto flex items-center gap-2">
+        <CommandActivity />
         <ConnectionIndicator />
         <ThemeMenu />
         <LogoutButton />
