@@ -1,0 +1,25 @@
+wave: A
+phase: 3
+status: complete
+timestamp: "2026-10-13T02:15:33Z"
+service_groups:
+  backend:
+    status: complete
+    plans: [03-01, 03-02, 03-03, 03-04]
+    files: [server/src/app.test.ts, server/src/app.ts, server/src/db/migrations/0004_indexers_downloads.sql, server/src/db/schema.ts, server/src/routes/blocklist.ts, server/src/routes/downloadclient.ts, server/src/routes/history.test.ts, server/src/routes/history.ts, server/src/routes/indexer.ts, server/src/routes/system.ts, server/src/services/blocklist.ts, server/src/services/history.ts, server/src/services/scheduler.test.ts, server/src/services/scheduler.ts, server/src/test/helpers.ts, shared/src/index.ts, shared/src/indexers.ts, server/src/indexers/newznab.test.ts, server/src/indexers/newznab.ts, server/src/indexers/registry.ts, server/src/indexers/types.ts, server/src/indexers/xml.test.ts, server/src/indexers/xml.ts, server/src/routes/indexer.test.ts, server/src/test/fakeIndexer.ts, server/src/downloadClients/bencode.ts, server/src/downloadClients/clients.test.ts, server/src/downloadClients/nzbget.ts, server/src/downloadClients/qbittorrent.ts, server/src/downloadClients/registry.ts, server/src/downloadClients/sabnzbd.ts, server/src/downloadClients/transmission.ts, server/src/downloadClients/types.ts, server/src/routes/downloadclient.test.ts, server/src/services/queue.test.ts, server/src/services/queue.ts, server/src/test/fakeDownloadClient.ts, server/src/decision/engine.test.ts, server/src/decision/engine.ts, server/src/decision/prioritize.ts, server/src/decision/specifications.ts, server/src/decision/types.ts, server/src/routes/release.test.ts, server/src/routes/release.ts, server/src/services/grab.ts, server/src/services/rss.ts, server/src/services/search.test.ts, server/src/services/search.ts]
+  frontend:
+    status: complete
+    plans: [03-05]
+    files: [web/src/lib/api.ts, web/src/lib/events.ts, web/src/pages/activity/Queue.tsx, web/src/pages/activity/RemoveQueueItemModal.tsx, web/src/pages/activity/hooks.ts, web/src/pages/activity/queue.test.tsx, web/src/pages/series/InteractiveSearchModal.tsx, web/src/pages/series/SeasonSection.tsx, web/src/pages/series/SeriesDetail.tsx, web/src/pages/series/hooks.ts, web/src/pages/series/interactiveSearch.test.tsx, web/src/pages/settings/DownloadClientModal.tsx, web/src/pages/settings/DownloadClients.tsx, web/src/pages/settings/IndexerModal.tsx, web/src/pages/settings/Indexers.tsx, web/src/pages/settings/providers.test.tsx, web/src/routes.tsx]
+analysis_findings:
+  count: 12
+  by_agent:
+    engineering-backend-architect: {blockers: 0, warnings: 5}
+    engineering-security-engineer: {blockers: 0, warnings: 7}
+outputs:
+  total_files: 65
+  total_plans: 5
+  passed: 5
+  failed: 0
+gate: architecture
+gate_status: passed
