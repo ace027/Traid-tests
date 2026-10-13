@@ -15,9 +15,11 @@
     "build": "npm run typecheck && npm run build -w @sonarr/web",
     "start": "npm start -w @sonarr/server",
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "e2e": "npm run build && playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "concurrently": "^10.0.6",
     "typescript": "^7.0.2",
     "vitest": "^5.0.4"

@@ -1,7 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { QueryClientContext } from '@tanstack/react-query';
 import { PanelLeft, PanelLeftClose, X } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { healthIssues, useHealth } from '../../pages/system/hooks';
 import { isLeafActive, isSectionActive, navigation } from './navigation';
 
 export const SIDEBAR_ID = 'app-sidebar';
@@ -31,6 +33,34 @@ function Logo({ collapsed }: { collapsed: boolean }) {
       <span className={cn('text-lg font-semibold tracking-tight', collapsed && 'md:sr-only')}>Sonarr</span>
     </Link>
   );
+}
+
+function HealthCount({ collapsed }: { collapsed: boolean }) {
+  const health = useHealth();
+  const issues = healthIssues(health.data);
+  if (issues.length === 0) return null;
+  const error = issues.some((h) => h.type === 'error');
+  return (
+    <span
+      data-testid="health-badge"
+      className={cn(
+        'ml-auto inline-flex min-w-5 items-center justify-center rounded-full border px-1.5 text-xs font-semibold tabular-nums',
+        error ? 'border-danger/30 bg-danger-soft text-danger' : 'border-warning/30 bg-warning-soft text-warning',
+        collapsed && 'md:absolute md:top-0.5 md:right-1 md:ml-0',
+      )}
+    >
+      <span aria-hidden="true">{issues.length}</span>
+      <span className="sr-only">
+        {issues.length} health {issues.length === 1 ? 'issue' : 'issues'}
+      </span>
+    </span>
+  );
+}
+
+/** Count of health warnings and errors; renders nothing without a QueryClient (layout tests). */
+function HealthBadge({ collapsed }: { collapsed: boolean }) {
+  const client = useContext(QueryClientContext);
+  return client ? <HealthCount collapsed={collapsed} /> : null;
 }
 
 export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobile }: SidebarProps) {
@@ -150,6 +180,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobil
                     )}
                     <Icon aria-hidden="true" className={cn('size-5 shrink-0', active ? 'text-accent' : 'group-hover:text-text')} />
                     <span className={cn('truncate', collapsed && 'md:sr-only')}>{section.label}</span>
+                    {section.path === '/system/status' && <HealthBadge collapsed={collapsed} />}
                   </Link>
                   {active && section.children && (
                     <ul

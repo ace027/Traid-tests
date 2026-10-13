@@ -41,3 +41,31 @@ Set **URL base** (Settings > General) to serve Sonarr under a sub-path such as `
 - `/ping` answers both at the root and under the base, for health checks.
 
 The server does not yet serve the built web UI. When you host `web/dist` under a URL base, add `<base href="/sonarr/">` to its `index.html`. The client derives its URL base from `<base href>` to find `initialize.json`, and assumes the root without one.
+
+## Running
+
+    npm install
+    npm run dev          # API on 8989 and the Vite dev server
+
+## Production build
+
+    npm run build && npm start   # serves the built UI and the API on http://localhost:8989
+
+## End-to-end tests
+
+`npm run e2e` builds the UI and runs the Playwright smoke suite (desktop 1280x800 and mobile 390x844)
+against `server/src/e2e/start.ts`: the real app on port 8990 with fake metadata, indexer and download
+client, a temp data directory and test-only endpoints on port 8991. It uses the preinstalled Chromium
+(`PLAYWRIGHT_CHROMIUM_PATH`, or the newest chromium-* under `PLAYWRIGHT_BROWSERS_PATH`, default `/opt/pw-browsers`).
+The first build is slow. Free ports 8990 and 8991 before running.
+
+## Feature overview
+
+| Sonarr area | Pages |
+| --- | --- |
+| Series | Series, Add New, Library Import, series detail with interactive search |
+| Calendar | Calendar |
+| Activity | Queue, History, Blocklist |
+| Wanted | Missing, Cutoff Unmet |
+| Settings | Media Management, Profiles, Quality, Indexers, Download Clients, Connect, Tags, General, UI |
+| System | Status, Tasks, Backup, Updates, Events, Log Files |

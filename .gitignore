@@ -5,6 +5,7 @@ web/dist
 *.db
 *.db-wal
 *.db-shm
-test-results
 coverage/
 .triad/
+test-results/
+playwright-report/

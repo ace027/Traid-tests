@@ -54,3 +54,4 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-045 | 2026-10-13 | Sonarr-replica | 5 | 05-04 | engineering-frontend-developer | implementation | failed | 5 | connections-system-and-polish, engineering | System pages: Partial |
 | O-046 | 2026-10-13 | Sonarr-replica | 5 | 05-05 | engineering-frontend-developer | implementation | success | 2 | connections-system-and-polish, engineering | Connect settings and live command activity: Complete |
 | O-047 | 2026-10-13 | Sonarr-replica | 5 | 05-04 | engineering-frontend-developer | implementation | success | 2 | connections-system-and-polish, engineering | System pages: Complete |
+| O-048 | 2026-10-13 | Sonarr-replica | 5 | 05-06 | testing-qa-verification-specialist | quality-review | failed | 5 | connections-system-and-polish, testing | End-to-end smoke tests with Playwright: Partial |
