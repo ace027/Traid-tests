@@ -70,7 +70,7 @@
 | Phase | Plans | Completed | Status |
 |-------|-------|-----------|--------|
 | 1 | 4 | 4 | Complete |
-| 2 | 4 | 2 | In Progress |
+| 2 | 4 | 4 | Executed |
 | 3 | 4 | 0 | Pending |
 | 4 | 4 | 0 | Pending |
 | 5 | 3 | 0 | Pending |

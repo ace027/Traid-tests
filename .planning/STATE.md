@@ -2,12 +2,12 @@
 
 ## Current Position
 - **Phase**: 2 of 5 (executing)
-- **Status**: Phase 2 executing — Plan 02-01 complete
-- **Last Activity**: Plan 02-01 execution (2026-10-13)
+- **Status**: Phase 2 executing — Plan 02-04 complete
+- **Last Activity**: Plan 02-04 execution (2026-10-13)
 
 ## Progress
 ```
-[######..............] 31% — 6/19 plans complete
+[########............] 42% — 8/19 plans complete
 ```
 
 ## Recent Decisions
@@ -35,3 +35,5 @@ Run `/triad:build` to execute Phase 2: Series Library
 - Plan 02-02 (Wave 1): Filename and release title parser — Complete
 - Plan 02-01 (Wave 1): Series data model, TVmaze provider and series API — PARTIAL: All three tasks are implemented on disk. Typecheck passes, shared tests pass (12), and every series and tvmaze test passes. Full server suite has 2 failures (254 of 256 pass) in server/src/app.test.ts
 - Plan 02-01 (Wave 1): Series data model, TVmaze provider and series API — Complete
+- Plan 02-03 (Wave 2): Episodes API, refresh and disk scan commands, library import — Complete with Warnings
+- Plan 02-04 (Wave 2): Series UI: add, library import, index and detail — Complete
