@@ -1,12 +1,12 @@
 wave: A
 phase: 2
 status: failed
-timestamp: "2026-10-13T01:37:22Z"
+timestamp: "2026-10-13T01:42:08Z"
 service_groups:
   backend:
     status: partial
     plans: [02-01, 02-02, 02-03]
-    files: [server/src/app.ts, server/src/db/migrations/0003_series.sql, server/src/db/schema.ts, server/src/routes/quality.ts, server/src/routes/series.test.ts, server/src/routes/series.ts, server/src/routes/tag.ts, server/src/services/metadata/tvmaze.test.ts, server/src/services/metadata/tvmaze.ts, server/src/services/metadata/types.ts, server/src/services/series.ts, server/src/test/fakeMetadata.ts, server/src/test/helpers.ts, shared/src/index.ts, shared/src/monitoring.test.ts, shared/src/monitoring.ts, shared/src/series.ts, server/src/parser/index.ts, server/src/parser/parser.test.ts, server/src/parser/parser.ts, server/src/parser/quality.test.ts, server/src/parser/quality.ts, server/src/parser/types.ts]
+    files: []
   frontend:
     status: failed
     plans: [02-04]
