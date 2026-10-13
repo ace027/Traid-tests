@@ -9,3 +9,4 @@ coverage/
 .triad/
 test-results/
 playwright-report/
+.planning/SPEND.json
