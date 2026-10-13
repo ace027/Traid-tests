@@ -92,7 +92,6 @@ export function useRefreshQueue() {
   });
 }
 
-// ---- formatting ------------------------------------------------------------------
 
 /** Percentage downloaded, 0-100 (whole number). */
 export function queueProgress(item: Pick<QueueResource, 'size' | 'sizeleft'>): number {

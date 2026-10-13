@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { Episode, QueueResource, Series } from '@sonarr/shared';
-import { Badge, Button, EmptyState, PageHeader, Switch, TBody, THead, Table, Td, Th, Tr, buttonClasses, type BadgeVariant } from '../../components/ui';
+import { Badge, Button, EmptyState, PageHeader, Switch, TBody, THead, Table, Td, Th, Tr, buttonClasses } from '../../components/ui';
 import { api, queryKeys } from '../../lib/api';
 import { cn } from '../../lib/cn';
 import { ProtocolBadge } from '../settings/IndexerModal';

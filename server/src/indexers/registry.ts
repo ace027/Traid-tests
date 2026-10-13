@@ -20,7 +20,6 @@ export function createIndexerClient(row: IndexerRow): IndexerClient {
   return factory(row);
 }
 
-// ---- backoff ----
 
 const BACKOFF_MINUTES = [5, 15, 30, 60, 180, 360, 720, 1440];
 

@@ -10,7 +10,6 @@ import { errorMessage, useTags } from './hooks';
 /** Placeholder the server returns for stored secrets; sending it back keeps the stored value. */
 export const MASKED = '********';
 
-// ---- hooks ------------------------------------------------------------------
 
 export interface IndexerStatus {
   indexerId: number;
@@ -82,7 +81,6 @@ export function useTestAllProviders(resource: 'indexer' | 'downloadclient', name
   });
 }
 
-// ---- shared presentation -----------------------------------------------------
 
 export function ProtocolBadge({ protocol }: { protocol: Protocol }) {
   return <Badge variant={protocol === 'usenet' ? 'info' : 'accent'}>{protocol === 'usenet' ? 'Usenet' : 'Torrent'}</Badge>;
@@ -241,7 +239,6 @@ export const isHttpUrl = (v: string) => {
   }
 };
 
-// ---- indexer modal -------------------------------------------------------------
 
 export const indexerTemplateOptions: Record<IndexerImplementation, Omit<ProviderTemplateOption, 'implementation' | 'protocol'>> = {
   Newznab: { label: 'Newznab', description: 'Usenet indexers that speak the Newznab API.' },
