@@ -169,13 +169,14 @@ test.describe('smoke', () => {
   });
 
   test('7. webhook connection test', async ({}, testInfo) => {
-    // The desktop run already created 'E2E Webhook' and its test call already reached /e2e-hook, so the
-    // mobile run uses its own name and checks that the hook count grows rather than that it is non-zero.
+    // The desktop run already created 'E2E Webhook': its 'Edit E2E Webhook' button behind the dialog also
+    // matches /Webhook/, so the type picker is looked up inside the dialog. Its test call already reached
+    // /e2e-hook too, so the mobile run uses its own name and checks that the hook count grows.
     const name = isMobile(testInfo) ? 'E2E Webhook Mobile' : 'E2E Webhook';
     const hooksBefore = ((await (await request.get(`${AUX}/e2e-hook`)).json()) as unknown[]).length;
     await visit(page, '/settings/connect');
     await page.getByRole('button', { name: 'Add Connection' }).first().click();
-    await page.getByRole('button', { name: /Webhook/ }).first().click();
+    await page.getByRole('dialog').getByRole('button', { name: /^Webhook/ }).click();
     await page.getByLabel(/^Name/).fill(name);
     await page.getByLabel(/^URL/).fill(`${AUX}/e2e-hook`);
     await page.getByRole('dialog').getByRole('button', { name: 'Test', exact: true }).click();

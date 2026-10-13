@@ -11,6 +11,7 @@
 ```
 
 ## Recent Decisions
+- Quick task (2026-10-13): fixed setup redirect race, light-theme contrast tokens and home-link name (axe clean), and grabs reusing a download id (latest grab wins; import/fail history scoped to that grab) found by the e2e suite
 - Quick task (2026-10-13): Sonarr v4-style auth (forms login + sessions, Authentication Required enabled/disabledForLocalAddresses, external), initialize.json gives the API key only to authorized callers, URL base moved into buildApp — resolves review findings F-002/F-008/F-009
 - Assumed: TypeScript full stack (Fastify + SQLite/Drizzle + React/Vite/Tailwind) instead of Sonarr's C#/.NET + React
 - Assumed: TVmaze as the metadata provider
