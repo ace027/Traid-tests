@@ -65,6 +65,14 @@
 - [ ] Playwright smoke test adds a series, runs a search and sees the queue using fakes
 **Plans**: 3
 
+## Milestones
+
+### Milestone 1: v1 Sonarr Replica
+- **Phases**: 1-5
+- **Goal**: A self-hosted TV series PVR with Sonarr's core feature set (library, indexers, decision engine, download clients, import/rename, activity, wanted, calendar, notifications, system) in modern TypeScript with a redesigned modern UI.
+- **Status**: Complete
+- **Completed**: 2026-10-13
+
 ## Progress
 
 | Phase | Plans | Completed | Status |

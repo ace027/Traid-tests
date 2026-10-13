@@ -66,3 +66,6 @@ All phases complete — project review finished!
 - Plan 05-04 (Wave 2): System pages — Complete
 - Plan 05-06 (Wave 3): End-to-end smoke tests with Playwright — PARTIAL: Playwright e2e is set up and `npx playwright test` exits 0 (24 passed, 2 skipped). The full desktop flow passes. On mobile, steps 5 and 7 are test.fixme because they fail at the second import in one s
 - Plan 05-06 (Wave 3): End-to-end smoke tests with Playwright — Complete
+
+## Milestones
+- Milestone 1: v1 Sonarr Replica — Complete (2026-10-13)
