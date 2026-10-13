@@ -162,8 +162,6 @@ export class HealthService {
     return next;
   }
 
-  // ---- individual checks -------------------------------------------------
-
   private indexerChecks(): HealthResource[] {
     const rows = this.app.db.select().from(schema.indexers).all();
     const out: HealthResource[] = [];
@@ -228,7 +226,7 @@ export class HealthService {
   private recycleBinCheck(): HealthResource[] {
     const bin = getMediaManagementConfig(this.app.db).recycleBin;
     if (!bin) return [];
-    let ok = false;
+    let ok: boolean;
     try {
       ok = fs.statSync(bin).isDirectory();
     } catch {
@@ -257,8 +255,6 @@ export class HealthService {
       ? [issue('AuthenticationCheck', 'warning', 'Authentication is set to External: make sure a reverse proxy protects Sonarr, as it will not ask for credentials', 'authentication')]
       : [];
   }
-
-  // ---- disk space --------------------------------------------------------
 
   /** One entry per distinct mount holding a root folder or the data directory. */
   async diskSpace(): Promise<DiskSpaceResource[]> {

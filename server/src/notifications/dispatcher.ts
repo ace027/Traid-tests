@@ -332,8 +332,6 @@ export function registerNotificationDispatcher(app: FastifyInstance): void {
         dispatch(msg, info.tags);
         break;
       }
-      default:
-        break;
     }
   }
 

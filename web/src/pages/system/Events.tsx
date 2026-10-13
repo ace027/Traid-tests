@@ -1,4 +1,4 @@
-import { Fragment, useId, useState } from 'react';
+import { useId, useState } from 'react';
 import { ChevronDown, RefreshCw, ScrollText } from 'lucide-react';
 import type { LogEntry, LogLevel } from '@sonarr/shared';
 import { Button, Card, EmptyState, PageHeader, Select, StatusBadge, TBody, THead, Table, Td, Th, Tr, type StatusKind } from '../../components/ui';
@@ -34,7 +34,7 @@ function EventRow({ entry }: { entry: LogEntry }) {
   const long = entry.message.length > LONG_MESSAGE;
   const expandable = Boolean(entry.exception) || long;
   return (
-    <Fragment>
+    <>
       <Tr>
         <Td>
           <DateCell iso={entry.time} />
@@ -79,7 +79,7 @@ function EventRow({ entry }: { entry: LogEntry }) {
           </td>
         </tr>
       )}
-    </Fragment>
+    </>
   );
 }
 

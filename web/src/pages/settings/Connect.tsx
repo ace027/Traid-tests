@@ -1,10 +1,9 @@
 import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { Bell, FlaskConical, Plus } from 'lucide-react';
 import { NOTIFICATION_EVENT_FLAGS, type NotificationResource } from '@sonarr/shared';
-import { Badge, Button, EmptyState, PageHeader, Spinner } from '../../components/ui';
+import { Badge, Button, EmptyState, PageHeader, Spinner, useToast } from '../../components/ui';
 import { api } from '../../lib/api';
-import { useMutation } from '@tanstack/react-query';
-import { useToast } from '../../components/ui';
 import { ProviderCard } from './Indexers';
 import { errorMessage } from './hooks';
 import type { ProviderTestResult } from './IndexerModal';

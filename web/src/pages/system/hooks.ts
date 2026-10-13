@@ -53,8 +53,6 @@ export const systemEnv = {
   reload: () => window.location.reload(),
 };
 
-// ---- status, health, disk space -------------------------------------------
-
 export const useSystemStatus = () =>
   useQuery({ queryKey: queryKeys.systemStatus, queryFn: () => api.get<SystemStatus>('system/status') });
 
@@ -75,8 +73,6 @@ export const useDiskSpace = () =>
 
 export const useUpdates = () =>
   useQuery({ queryKey: queryKeys.updates, queryFn: () => api.get<UpdateResource[]>('update') });
-
-// ---- tasks and commands ---------------------------------------------------
 
 export const isActiveCommand = (c: Pick<Command, 'status'>) => c.status === 'queued' || c.status === 'started';
 
@@ -122,8 +118,6 @@ export function useRunTask(name: string) {
   return { run: () => mutation.mutate(), running: running || mutation.isPending, isPending: mutation.isPending };
 }
 
-// ---- logs -------------------------------------------------------------------
-
 export interface LogParams {
   page: number;
   pageSize: number;
@@ -143,8 +137,6 @@ export const useLogs = (params: LogParams) =>
 
 export const useLogFiles = () =>
   useQuery({ queryKey: queryKeys.logFiles, queryFn: () => api.get<LogFileResource[]>('log/file') });
-
-// ---- backups, restore, restart ------------------------------------------------
 
 export interface RestoreResult {
   restartRequired: boolean;
@@ -275,8 +267,6 @@ export function waitForRestart(urlBase: string, onBack: () => void = () => syste
     clearTimeout(timer);
   };
 }
-
-// ---- formatting -------------------------------------------------------------
 
 /** 'RefreshMonitoredDownloads' -> 'Refresh Monitored Downloads'; 'RssSync' -> 'RSS Sync'. */
 export function humanizeName(name: string): string {
