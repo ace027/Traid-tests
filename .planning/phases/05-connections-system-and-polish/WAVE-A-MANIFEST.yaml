@@ -1,0 +1,17 @@
+wave: A
+phase: 5
+status: failed
+timestamp: "2026-10-13T03:40:56Z"
+service_groups:
+  mixed:
+    status: complete
+    plans: [05-01, 05-06]
+    files: [server/src/app.test.ts, server/src/app.ts, server/src/db/migrations/0005_notifications.sql, server/src/db/schema.ts, server/src/index.ts, server/src/plugins/staticUi.test.ts, server/src/plugins/staticUi.ts, server/src/routes/backup.ts, server/src/routes/notification.ts, server/src/routes/systemExtra.ts, server/src/services/health.test.ts, server/src/services/health.ts, server/src/services/logs.test.ts, server/src/services/logs.ts, shared/src/index.ts, shared/src/system.ts, web/src/components/ui/StatusBadge.tsx, web/src/components/ui/index.ts, web/src/lib/api.ts, web/src/lib/events.ts, web/src/pages/settings/Connect.tsx, web/src/pages/system/Backup.tsx, web/src/pages/system/Events.tsx, web/src/pages/system/LogFiles.tsx, web/src/pages/system/Status.tsx, web/src/pages/system/Tasks.tsx, web/src/pages/system/Updates.tsx, web/src/routes.tsx]
+  backend:
+    status: complete
+    plans: [05-02, 05-03]
+    files: [server/src/notifications/discord.ts, server/src/notifications/dispatcher.ts, server/src/notifications/email.ts, server/src/notifications/notifications.test.ts, server/src/notifications/payload.ts, server/src/notifications/smtp.test.ts, server/src/notifications/smtp.ts, server/src/notifications/types.ts, server/src/notifications/webhook.ts, server/src/routes/notification.test.ts, server/src/routes/notification.ts, server/src/db/index.ts, server/src/routes/backup.ts, server/src/services/backup.test.ts, server/src/services/backup.ts, server/src/services/housekeeping.test.ts, server/src/services/housekeeping.ts, server/src/services/zip.test.ts, server/src/services/zip.ts]
+  frontend:
+    status: partial
+    plans: [05-04, 05-05]
+    files: [web/src/components/layout/Sidebar.tsx, web/src/pages/system/Backup.tsx, web/src/pages/system/Events.tsx, web/src/pages/system/LogFiles.tsx, web/src/pages/system/Status.tsx, web/src/pages/system/Tasks.tsx, web/src/pages/system/Updates.tsx, web/src/pages/system/hooks.ts, web/src/pages/system/system.test.tsx, web/src/components/layout/CommandActivity.tsx, web/src/components/layout/Header.tsx, web/src/components/layout/commandActivity.test.tsx, web/src/pages/settings/Connect.tsx, web/src/pages/settings/NotificationModal.tsx, web/src/pages/settings/connect.test.tsx]
