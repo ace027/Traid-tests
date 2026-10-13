@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, isNull, lt, lte, or, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { validationError, type CalendarEpisode, type Series } from '@sonarr/shared';
