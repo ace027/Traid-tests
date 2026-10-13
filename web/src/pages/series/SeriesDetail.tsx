@@ -5,6 +5,7 @@ import type { Episode, EpisodeFile, Series } from '@sonarr/shared';
 import { Badge, Button, EmptyState, Spinner, Switch, buttonClasses } from '../../components/ui';
 import { DeleteSeriesModal } from './DeleteSeriesModal';
 import { EditSeriesModal } from './EditSeriesModal';
+import { InteractiveSearchModal, type InteractiveSearchTarget } from './InteractiveSearchModal';
 import { SeasonSection } from './SeasonSection';
 import { PosterImage } from './SeriesPoster';
 import {
@@ -115,8 +116,11 @@ function Detail({ series }: { series: Series }) {
   const filesQuery = useEpisodeFiles(series.id);
   const update = useUpdateSeries();
   const refresh = useRunCommand();
+  // TODO(03-05 escalation): the plan drops this special case, but series.test.tsx (outside this
+  // plan's files) still asserts the info toast. Remove once that test is updated.
   const search = useRunCommand({ unknownCommandMessage: 'Searching is available once indexers are configured' });
   const [editOpen, setEditOpen] = useState(false);
+  const [interactive, setInteractive] = useState<InteractiveSearchTarget | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const bySeason = useMemo(() => {
@@ -197,6 +201,7 @@ function Detail({ series }: { series: Series }) {
           {seasons.map((season) => (
             <SeasonSection
               key={season.seasonNumber}
+              seriesId={series.id}
               season={season}
               episodes={bySeason.get(season.seasonNumber) ?? []}
               files={files}
@@ -204,6 +209,7 @@ function Detail({ series }: { series: Series }) {
               defaultOpen={season.seasonNumber === newest}
               onToggleMonitored={toggleSeason}
               seasonToggleDisabled={update.isPending}
+              onInteractiveSearch={setInteractive}
             />
           ))}
         </div>
@@ -211,6 +217,7 @@ function Detail({ series }: { series: Series }) {
 
       <EditSeriesModal series={series} open={editOpen} onClose={() => setEditOpen(false)} />
       <DeleteSeriesModal series={series} open={deleteOpen} onClose={() => setDeleteOpen(false)} />
+      {interactive && <InteractiveSearchModal series={series} target={interactive} onClose={() => setInteractive(null)} />}
     </div>
   );
 }

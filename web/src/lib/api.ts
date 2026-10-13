@@ -241,4 +241,15 @@ export const queryKeys = {
   seriesLookup: (term: string) => ['series', 'lookup', term] as const,
   episodes: (seriesId: number) => ['episode', seriesId] as const,
   episodeFiles: (seriesId: number) => ['episodefile', seriesId] as const,
+  indexers: ['indexer'] as const,
+  indexerSchema: ['indexer', 'schema'] as const,
+  indexerStatus: ['indexerstatus'] as const,
+  downloadClients: ['downloadclient'] as const,
+  downloadClientSchema: ['downloadclient', 'schema'] as const,
+  /** Prefix of every queue page key; `queue(params)` is one page. */
+  queueAll: ['queue'] as const,
+  queue: (params: Record<string, QueryValue>) => ['queue', params] as const,
+  queueStatus: ['queue', 'status'] as const,
+  releases: (params: Record<string, QueryValue>) => ['release', params] as const,
+  history: ['history'] as const,
 } as const;

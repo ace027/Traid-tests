@@ -15,6 +15,9 @@ import { Quality } from './pages/settings/Quality';
 import { Tags } from './pages/settings/Tags';
 import { General } from './pages/settings/General';
 import { UiSettings } from './pages/settings/UiSettings';
+import { Indexers } from './pages/settings/Indexers';
+import { DownloadClients } from './pages/settings/DownloadClients';
+import { Queue } from './pages/activity/Queue';
 import { SeriesIndex } from './pages/series/SeriesIndex';
 import { AddNew } from './pages/series/AddNew';
 import { LibraryImport } from './pages/series/LibraryImport';
@@ -35,7 +38,7 @@ const withQuery = (page: ReactNode) => <EnsureQueryClient>{page}</EnsureQueryCli
 const placeholder = (title: string) => <Placeholder title={title} />;
 
 /**
- * Children of /settings. Indexers, download clients, import lists, connect and metadata stay placeholders;
+ * Children of /settings. Import lists, connect and metadata stay placeholders;
  * paths are relative to /settings ('index' is the overview).
  */
 export const settingsRoutes: RouteObject[] = [
@@ -43,8 +46,8 @@ export const settingsRoutes: RouteObject[] = [
   { path: 'mediamanagement', element: withQuery(<MediaManagement />) },
   { path: 'profiles', element: withQuery(<Profiles />) },
   { path: 'quality', element: withQuery(<Quality />) },
-  { path: 'indexers', element: placeholder('Indexers') },
-  { path: 'downloadclients', element: placeholder('Download Clients') },
+  { path: 'indexers', element: withQuery(<Indexers />) },
+  { path: 'downloadclients', element: withQuery(<DownloadClients />) },
   { path: 'importlists', element: placeholder('Import Lists') },
   { path: 'connect', element: placeholder('Connect') },
   { path: 'metadata', element: placeholder('Metadata') },
@@ -58,6 +61,7 @@ const pages: Record<string, ReactNode> = {
   '/': withQuery(<SeriesIndex />),
   '/add/new': withQuery(<AddNew />),
   '/add/import': withQuery(<LibraryImport />),
+  '/activity/queue': withQuery(<Queue />),
 };
 
 /** Series routes that are not in the navigation. */

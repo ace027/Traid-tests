@@ -24,6 +24,11 @@ export const eventQueryKeys: Record<string, readonly QueryKey[]> = {
   series: [queryKeys.series],
   episode: [['episode']],
   episodefile: [['episodefile'], queryKeys.series],
+  indexer: [queryKeys.indexers, queryKeys.indexerStatus],
+  indexerstatus: [queryKeys.indexerStatus],
+  downloadclient: [queryKeys.downloadClients],
+  queue: [queryKeys.queueAll],
+  history: [queryKeys.history],
 };
 
 export const RECONNECT_MIN_MS = 1000;

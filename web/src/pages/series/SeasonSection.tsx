@@ -1,9 +1,10 @@
 import { useId, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Search, UserSearch } from 'lucide-react';
 import type { Episode, EpisodeFile, Season } from '@sonarr/shared';
 import { Badge, Button, Switch, TBody, THead, Table, Td, Th, Tr, type BadgeVariant } from '../../components/ui';
 import { cn } from '../../lib/cn';
-import { formatBytes, seasonName, useMonitorEpisode, useMonitorEpisodes } from './hooks';
+import { formatBytes, seasonName, useMonitorEpisode, useMonitorEpisodes, useRunCommand } from './hooks';
+import type { InteractiveSearchTarget } from './InteractiveSearchModal';
 
 export type EpisodeStatus = 'downloaded' | 'missing' | 'unaired' | 'unmonitored';
 
@@ -45,6 +46,7 @@ export const episodeCode = (ep: Pick<Episode, 'seasonNumber' | 'episodeNumber'>)
   `S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')}`;
 
 export interface SeasonSectionProps {
+  seriesId: number;
   season: Season;
   episodes: Episode[];
   files: Map<number, EpisodeFile>;
@@ -52,10 +54,13 @@ export interface SeasonSectionProps {
   defaultOpen?: boolean;
   onToggleMonitored: (seasonNumber: number, monitored: boolean) => void;
   seasonToggleDisabled?: boolean;
+  /** Opens the interactive search modal for this season or one of its episodes. */
+  onInteractiveSearch: (target: InteractiveSearchTarget) => void;
 }
 
 /** Collapsible season: monitored switch, progress and size in the header; episode table in the body. */
 export function SeasonSection({
+  seriesId,
   season,
   episodes,
   files,
@@ -63,12 +68,14 @@ export function SeasonSection({
   defaultOpen = false,
   onToggleMonitored,
   seasonToggleDisabled,
+  onInteractiveSearch,
 }: SeasonSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = useId();
   const headingId = useId();
   const monitorOne = useMonitorEpisode();
   const monitorMany = useMonitorEpisodes();
+  const search = useRunCommand();
   const name = seasonName(season.seasonNumber);
 
   const fileCount = season.statistics?.episodeFileCount ?? episodes.filter((e) => e.hasFile).length;
@@ -116,6 +123,33 @@ export function SeasonSection({
             <span className="ml-auto hidden text-sm text-text-muted sm:inline">{size > 0 ? formatBytes(size) : ''}</span>
           </button>
         </h3>
+        <div className="flex shrink-0 items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<Search aria-hidden="true" />}
+            title={`Search ${name} for monitored episodes`}
+            loading={search.isPending && search.variables?.name === 'SeasonSearch'}
+            onClick={() =>
+              search.mutate({
+                name: 'SeasonSearch',
+                body: { seriesId, seasonNumber: season.seasonNumber },
+                label: `search for ${name}`,
+              })
+            }
+          >
+            <span className="max-sm:sr-only">Search season</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<UserSearch aria-hidden="true" />}
+            title={`Interactive search for ${name}`}
+            onClick={() => onInteractiveSearch({ kind: 'season', seasonNumber: season.seasonNumber })}
+          >
+            <span className="max-sm:sr-only">Interactive search</span>
+          </Button>
+        </div>
       </div>
       <div id={bodyId} hidden={!open} className="border-t border-border">
         {open && (
@@ -133,6 +167,9 @@ export function SeasonSection({
                     <Th>Title</Th>
                     <Th>Air Date</Th>
                     <Th>Status</Th>
+                    <Th className="w-24">
+                      <span className="sr-only">Search</span>
+                    </Th>
                   </tr>
                 </THead>
                 <TBody>
@@ -157,6 +194,35 @@ export function SeasonSection({
                             {badge.label}
                             {status === 'downloaded' && file ? ` (${file.quality.quality.name})` : ''}
                           </Badge>
+                        </Td>
+                        <Td className="py-1.5 whitespace-nowrap">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Automatic search ${episodeCode(ep)}`}
+                            title="Automatic search"
+                            icon={<Search aria-hidden="true" />}
+                            loading={
+                              search.isPending &&
+                              search.variables?.name === 'EpisodeSearch' &&
+                              (search.variables.body?.episodeIds as number[] | undefined)?.[0] === ep.id
+                            }
+                            onClick={() =>
+                              search.mutate({
+                                name: 'EpisodeSearch',
+                                body: { episodeIds: [ep.id] },
+                                label: `search for ${episodeCode(ep)}`,
+                              })
+                            }
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Interactive search ${episodeCode(ep)}`}
+                            title="Interactive search"
+                            icon={<UserSearch aria-hidden="true" />}
+                            onClick={() => onInteractiveSearch({ kind: 'episode', episode: ep })}
+                          />
                         </Td>
                       </Tr>
                     );

@@ -6,6 +6,7 @@ import type {
   Episode,
   EpisodeFile,
   MonitorOption,
+  ReleaseResource,
   RootFolder,
   Series,
   SeriesLookup,
@@ -155,6 +156,39 @@ export function useRunCommand(options: RunCommandOptions = {}) {
       }
       toast.error(errorMessage(error));
     },
+  });
+}
+
+// ---- releases ---------------------------------------------------------------
+
+export type ReleaseSearchParams = { episodeId: number } | { seriesId: number; seasonNumber: number };
+
+/**
+ * Interactive search (GET /release). Runs only while `enabled` (the modal is open), never
+ * retries (searches hit every indexer) and is always considered stale so reopening searches again.
+ */
+export const useReleases = (params: ReleaseSearchParams, enabled: boolean) =>
+  useQuery({
+    queryKey: queryKeys.releases({ ...params }),
+    queryFn: ({ signal }) => api.get<ReleaseResource[]>('release', { query: { ...params }, signal }),
+    enabled,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+/** POST /release {guid, indexerId}; toasts 'Grabbed {title}' or the server's message (e.g. 409). */
+export function useGrabRelease() {
+  const qc = useQueryClient();
+  const toast = useToast();
+  return useMutation<unknown, unknown, Pick<ReleaseResource, 'guid' | 'indexerId' | 'title'>>({
+    mutationFn: ({ guid, indexerId }) => api.post('release', { guid, indexerId }),
+    onSuccess: (_data, { title }) => {
+      toast.success(`Grabbed ${title}`);
+      void qc.invalidateQueries({ queryKey: queryKeys.queueAll });
+    },
+    onError: (error) => toast.error(errorMessage(error)),
   });
 }
 
