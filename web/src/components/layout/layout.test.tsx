@@ -30,7 +30,17 @@ describe('navigation', () => {
     );
   });
 
-  it.each(flattenNavigation().map((e) => [e.path, e.label]))('routes %s to a page titled %s', (path, label) => {
+  // Section entries that open a sub-page carry that page's own title.
+  const pageTitles: Record<string, string> = {
+    '/activity/queue': 'Queue',
+    '/activity/history': 'History',
+    '/activity/blocklist': 'Blocklist',
+    '/wanted/missing': 'Missing',
+    '/wanted/cutoffunmet': 'Cutoff Unmet',
+    '/calendar': 'Calendar',
+  };
+
+  it.each(flattenNavigation().map((e) => [e.path, pageTitles[e.path] ?? e.label]))('routes %s to a page titled %s', (path, label) => {
     renderAt(path);
     expect(screen.getByRole('heading', { level: 1, name: label })).toBeInTheDocument();
   });

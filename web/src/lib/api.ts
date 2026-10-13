@@ -251,5 +251,15 @@ export const queryKeys = {
   queue: (params: Record<string, QueryValue>) => ['queue', params] as const,
   queueStatus: ['queue', 'status'] as const,
   releases: (params: Record<string, QueryValue>) => ['release', params] as const,
-  history: ['history'] as const,
+  /** Prefix of every history page key; `history(params)` is one page. */
+  historyAll: ['history'] as const,
+  history: (params: Record<string, QueryValue>) => ['history', params] as const,
+  blocklistAll: ['blocklist'] as const,
+  blocklist: (params: Record<string, QueryValue>) => ['blocklist', params] as const,
+  /** Prefix of both wanted lists. */
+  wantedAll: ['wanted'] as const,
+  wantedMissing: (params: Record<string, QueryValue>) => ['wanted', 'missing', params] as const,
+  wantedCutoff: (params: Record<string, QueryValue>) => ['wanted', 'cutoff', params] as const,
+  calendarAll: ['calendar'] as const,
+  calendar: (params: Record<string, QueryValue>) => ['calendar', params] as const,
 } as const;

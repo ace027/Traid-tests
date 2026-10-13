@@ -18,6 +18,11 @@ import { UiSettings } from './pages/settings/UiSettings';
 import { Indexers } from './pages/settings/Indexers';
 import { DownloadClients } from './pages/settings/DownloadClients';
 import { Queue } from './pages/activity/Queue';
+import { History } from './pages/activity/History';
+import { Blocklist } from './pages/activity/Blocklist';
+import { Missing } from './pages/wanted/Missing';
+import { CutoffUnmet } from './pages/wanted/CutoffUnmet';
+import { Calendar } from './pages/calendar/Calendar';
 import { SeriesIndex } from './pages/series/SeriesIndex';
 import { AddNew } from './pages/series/AddNew';
 import { LibraryImport } from './pages/series/LibraryImport';
@@ -61,7 +66,12 @@ const pages: Record<string, ReactNode> = {
   '/': withQuery(<SeriesIndex />),
   '/add/new': withQuery(<AddNew />),
   '/add/import': withQuery(<LibraryImport />),
+  '/calendar': withQuery(<Calendar />),
   '/activity/queue': withQuery(<Queue />),
+  '/activity/history': withQuery(<History />),
+  '/activity/blocklist': withQuery(<Blocklist />),
+  '/wanted/missing': withQuery(<Missing />),
+  '/wanted/cutoffunmet': withQuery(<CutoffUnmet />),
 };
 
 /** Series routes that are not in the navigation. */
