@@ -1,9 +1,9 @@
 # Project State
 
 ## Current Position
-- **Phase**: 2 of 5 (complete)
-- **Status**: Phase 2 complete — review passed (4 cycle(s))
-- **Last Activity**: Phase 2 review (2026-10-13)
+- **Phase**: 3 of 5 (planned)
+- **Status**: Phase 3 planned -- 5 plans across 3 waves
+- **Last Activity**: Phase 3 planning (2026-10-13)
 
 ## Progress
 ```
@@ -20,7 +20,7 @@
 - Assumed: SSE for realtime events instead of SignalR
 
 ## Next Action
-Run `/triad:plan 3` to plan Phase 3: Indexers, Search and Download Clients
+Run `/triad:build` to execute Phase 3: Indexers, Search and Download Clients
 
 ## Phase 1 Results
 (build started 2026-10-12)
