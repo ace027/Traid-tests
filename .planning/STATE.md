@@ -1,9 +1,9 @@
 # Project State
 
 ## Current Position
-- **Phase**: 4 of 5 (complete)
-- **Status**: Phase 4 complete — review passed (3 cycle(s))
-- **Last Activity**: Phase 4 review (2026-10-13)
+- **Phase**: 5 of 5 (planned)
+- **Status**: Phase 5 planned -- 6 plans across 3 waves
+- **Last Activity**: Phase 5 planning (2026-10-13)
 
 ## Progress
 ```
@@ -20,7 +20,7 @@
 - Assumed: SSE for realtime events instead of SignalR
 
 ## Next Action
-Run `/triad:plan 5` to plan Phase 5: Connections, System and Polish
+Run `/triad:build` to execute Phase 5: Connections, System and Polish
 
 ## Phase 1 Results
 (build started 2026-10-12)
