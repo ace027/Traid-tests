@@ -11,18 +11,24 @@ export async function tagRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/api/v3/tag', async () => all());
 
-  app.get('/api/v3/tag/detail', async () =>
-    all().map((t) => ({
+  app.get('/api/v3/tag/detail', async () => {
+    const seriesByTag = new Map<number, number[]>();
+    for (const s of app.db.select({ id: schema.series.id, tags: schema.series.tags }).from(schema.series).all()) {
+      for (const tagId of JSON.parse(s.tags) as number[]) {
+        seriesByTag.set(tagId, [...(seriesByTag.get(tagId) ?? []), s.id]);
+      }
+    }
+    return all().map((t) => ({
       ...t,
-      seriesIds: [],
+      seriesIds: seriesByTag.get(t.id) ?? [],
       notificationIds: [],
       indexerIds: [],
       downloadClientIds: [],
       importListIds: [],
       delayProfileIds: [],
       releaseProfileIds: [],
-    })),
-  );
+    }));
+  });
 
   app.get<{ Params: { id: string } }>('/api/v3/tag/:id', async (req, reply) => {
     const row = find(parseId(req.params.id));

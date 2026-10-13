@@ -10,12 +10,15 @@ import { configRoutes } from './routes/config.js';
 import { eventRoutes } from './routes/events.js';
 import { qualityRoutes } from './routes/quality.js';
 import { rootFolderRoutes } from './routes/rootfolder.js';
+import { seriesRoutes } from './routes/series.js';
 import { readVersion, systemRoutes } from './routes/system.js';
 import { tagRoutes } from './routes/tag.js';
 import { AuthService } from './services/auth.js';
 import { CommandQueue } from './services/commands.js';
 import { EventBus } from './services/events.js';
 import { ensureHostConfig, getHostConfig, saveHostConfig } from './services/hostConfig.js';
+import type { MetadataProvider } from './services/metadata/types.js';
+import { TvMazeProvider } from './services/metadata/tvmaze.js';
 import { seed } from './services/seed.js';
 
 declare module 'fastify' {
@@ -26,6 +29,7 @@ declare module 'fastify' {
     events: EventBus;
     commands: CommandQueue;
     auth: AuthService;
+    metadata: MetadataProvider;
     /** Applies an update to the host config, persists it, refreshes the auth cache and publishes an event. */
     updateHostConfig: (update: (host: HostConfig) => HostConfig) => HostConfig;
   }
@@ -34,6 +38,7 @@ declare module 'fastify' {
 export interface BuildAppOptions {
   dataDir: string;
   logger?: boolean;
+  metadataProvider?: MetadataProvider;
 }
 
 export { ensureHostConfig, getHostConfig };
@@ -62,7 +67,7 @@ export function redactUrl(url: unknown): unknown {
 
 const isPing = (url: string) => url === '/ping' || url.startsWith('/ping?');
 
-export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Promise<FastifyInstance> {
+export async function buildApp({ dataDir, logger = false, metadataProvider }: BuildAppOptions): Promise<FastifyInstance> {
   const dir = resolveDataDir(dataDir);
   const startTime = new Date().toISOString();
   const { sqlite, db } = openDb(dir);
@@ -93,6 +98,7 @@ export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Pr
   app.decorate('db', db);
   app.decorate('sqlite', sqlite);
   app.decorate('dataDir', dir);
+  app.decorate('metadata', metadataProvider ?? new TvMazeProvider());
   seed(db);
 
   const events = new EventBus();
@@ -154,6 +160,7 @@ export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Pr
 
   await app.register(rootFolderRoutes);
   await app.register(tagRoutes);
+  await app.register(seriesRoutes);
   await app.register(qualityRoutes);
   await app.register(configRoutes);
   await app.register(commandRoutes);

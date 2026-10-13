@@ -172,6 +172,8 @@ export async function qualityRoutes(app: FastifyInstance): Promise<void> {
   app.delete<{ Params: { id: string } }>('/api/v3/qualityprofile/:id', async (req, reply) => {
     const row = findProfile(parseId(req.params.id));
     if (!row) return reply.code(404).send({ message: 'NotFound' });
+    const inUse = app.db.select({ id: schema.series.id }).from(schema.series).where(eq(schema.series.qualityProfileId, row.id)).limit(1).get();
+    if (inUse) throw validationError('id', 'Quality profile is in use by a series');
     const count = app.db.select().from(schema.qualityProfiles).all().length;
     if (count <= 1) throw validationError('id', 'Cannot delete the last quality profile');
     app.db.delete(schema.qualityProfiles).where(eq(schema.qualityProfiles.id, row.id)).run();
