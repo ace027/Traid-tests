@@ -2,12 +2,12 @@
 
 ## Current Position
 - **Phase**: 3 of 5 (executing)
-- **Status**: Phase 3 executing — Plan 03-01 complete
-- **Last Activity**: Plan 03-01 execution (2026-10-13)
+- **Status**: Phase 3 executing — Plan 03-05 complete
+- **Last Activity**: Plan 03-05 execution (2026-10-13)
 
 ## Progress
 ```
-[#########...........] 45% — 9/20 plans complete
+[############........] 60% — 12/20 plans complete
 ```
 
 ## Recent Decisions
@@ -41,3 +41,6 @@ Run `/triad:build` to execute Phase 3: Indexers, Search and Download Clients
 ## Phase 3 Results
 (build started 2026-10-13)
 - Plan 03-01 (Wave 1): Phase 3 foundations: schema, shared types, scheduler, history and blocklist — Complete
+- Plan 03-02 (Wave 2): Newznab and Torznab indexers — Complete
+- Plan 03-03 (Wave 2): Download clients and queue tracking — Complete
+- Plan 03-05 (Wave 2): Indexer, download client, queue and interactive search UI — Complete with Warnings
