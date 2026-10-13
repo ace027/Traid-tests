@@ -273,8 +273,8 @@ export class QueueService {
       if (item.message && item.status === 'warning') statusMessages.push({ title: item.title, messages: [item.message] });
       if (match) {
         const grabbedId = match.rows[0]!.downloadId ?? item.downloadId;
-        if (failed && downloadEvents(this.app.db, grabbedId, 'downloadFailed').length > 0) state = 'failed';
-        else if (isFullyImported(this.app.db, grabbedId, match.episodeIds)) state = 'imported';
+        if (failed && downloadEvents(this.app.db, grabbedId, 'downloadFailed', match.rows[0]!.date).length > 0) state = 'failed';
+        else if (isFullyImported(this.app.db, grabbedId, match.episodeIds, match.rows[0]!.date)) state = 'imported';
         else if (state === 'importPending' && this.importing.has(item.downloadId.toLowerCase())) state = 'importing';
         const outcome = this.outcomes.get(key);
         if (state === 'importPending' && outcome?.status) {

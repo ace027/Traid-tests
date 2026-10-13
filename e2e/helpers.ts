@@ -87,14 +87,8 @@ export async function openNav(page: Page, testInfo: TestInfo): Promise<void> {
   await page.getByRole('button', { name: 'Open navigation' }).click();
 }
 
-/**
- * Serious axe findings in the product UI that this plan may not fix (web/src is out of scope):
- * - color-contrast: the accent color (accent buttons, active nav link, success badges, external links)
- *   is below 4.5:1 in a real browser; jsdom axe tests cannot measure contrast.
- * - label-content-name-mismatch: the 'Sonarr home' logo link has an aria-label that does not contain its visible text.
- * Every other serious or critical rule still fails the run. Remove an entry once the UI is fixed.
- */
-export const KNOWN_PRODUCT_VIOLATIONS = ['color-contrast', 'label-content-name-mismatch'];
+/** Serious axe findings in the product UI that are tolerated; keep empty so every serious or critical rule fails the run. */
+export const KNOWN_PRODUCT_VIOLATIONS: string[] = [];
 
 /** Injects axe-core and asserts there are no serious or critical violations. */
 export async function axeCheck(page: Page, label: string): Promise<void> {

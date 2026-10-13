@@ -20,22 +20,26 @@ export interface HandlingOutcome {
   removed?: boolean;
 }
 
-/** History rows of one event type for a download id (download ids are matched case-insensitively). */
-export function downloadEvents(db: Db, downloadId: string, eventType: HistoryEventType): HistoryRow[] {
+/**
+ * History rows of one event type for a download id (download ids are matched case-insensitively). With `since`
+ * (the grab date) only events of that grab count, not those of an earlier grab that had the same id.
+ */
+export function downloadEvents(db: Db, downloadId: string, eventType: HistoryEventType, since?: string): HistoryRow[] {
   for (const id of new Set([downloadId, downloadId.toLowerCase(), downloadId.toUpperCase()])) {
     const rows = db
       .select()
       .from(schema.history)
       .where(and(eq(schema.history.downloadId, id), eq(schema.history.eventType, eventType)))
-      .all();
+      .all()
+      .filter((r) => since === undefined || r.date >= since);
     if (rows.length > 0) return rows;
   }
   return [];
 }
 
 /** True when every episode of the grab has a downloadFolderImported event for this download. */
-export function isFullyImported(db: Db, downloadId: string, episodeIds: readonly number[]): boolean {
-  const rows = downloadEvents(db, downloadId, 'downloadFolderImported');
+export function isFullyImported(db: Db, downloadId: string, episodeIds: readonly number[], since?: string): boolean {
+  const rows = downloadEvents(db, downloadId, 'downloadFolderImported', since);
   if (rows.length === 0) return false;
   const done = new Set(rows.map((r) => r.episodeId));
   return episodeIds.every((id) => done.has(id));
@@ -48,6 +52,7 @@ export function transferModeFor(db: Db, t: Pick<TrackedDownload, 'protocol' | 'i
 }
 
 const grabbedDownloadId = (t: TrackedDownload) => t.match?.rows[0]?.downloadId ?? t.item.downloadId;
+const grabDate = (t: TrackedDownload) => t.match?.rows[0]?.date;
 
 async function removeFromClient(app: FastifyInstance, t: TrackedDownload, why: 'completed' | 'failed'): Promise<boolean> {
   const row = app.db.select().from(schema.downloadClients).where(eq(schema.downloadClients.id, t.clientId)).get();
@@ -90,7 +95,7 @@ export async function processCompleted(app: FastifyInstance, t: TrackedDownload)
   if (decisions.length === 0) return warning(t.item.title, `No files found are eligible for import in ${outputPath}`);
 
   const results = await importDecisions(app, decisions, { mode: transferModeFor(app.db, t), downloadId, downloadClient: t.clientName });
-  if (isFullyImported(app.db, downloadId, t.match.episodeIds)) {
+  if (isFullyImported(app.db, downloadId, t.match.episodeIds, grabDate(t))) {
     return { state: 'imported', removed: await removeFromClient(app, t, 'completed') };
   }
   const statusMessages = results
@@ -110,7 +115,7 @@ export async function processCompleted(app: FastifyInstance, t: TrackedDownload)
 export async function processFailed(app: FastifyInstance, t: TrackedDownload): Promise<HandlingOutcome> {
   if (!t.match) return { state: 'failedPending' };
   const downloadId = grabbedDownloadId(t);
-  if (downloadEvents(app.db, downloadId, 'downloadFailed').length > 0) return { state: 'failed' };
+  if (downloadEvents(app.db, downloadId, 'downloadFailed', grabDate(t)).length > 0) return { state: 'failed' };
   const grabbed = t.match.rows[0]!;
   let data: Record<string, string> = {};
   try {

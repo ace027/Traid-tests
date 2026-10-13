@@ -21,7 +21,6 @@ function Logo({ collapsed }: { collapsed: boolean }) {
   return (
     <Link
       to="/"
-      aria-label="Sonarr home"
       className="focus-ring flex items-center gap-2.5 rounded-md text-text"
     >
       <span
@@ -31,6 +30,7 @@ function Logo({ collapsed }: { collapsed: boolean }) {
         S
       </span>
       <span className={cn('text-lg font-semibold tracking-tight', collapsed && 'md:sr-only')}>Sonarr</span>
+      <span className="sr-only"> home</span>
     </Link>
   );
 }

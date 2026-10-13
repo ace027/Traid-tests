@@ -60,16 +60,18 @@ const fakeIndexer: IndexerClient = {
   },
 };
 
-/** Downloads complete after the second RefreshMonitoredDownloads command. */
+/** Each download completes after the second RefreshMonitoredDownloads command following its grab. */
 let refreshes = 0;
+// Ids are never handed out twice (like SABnzbd's nzo ids), even after items are removed.
+let downloadCounter = 0;
 // Every file gets a unique size: the importer treats a same-sized file in the library as already imported.
 let fileCounter = 0;
-const grabbed: { downloadId: string; title: string; dir: string }[] = [];
+const grabbed: { downloadId: string; title: string; dir: string; doneAt: number }[] = [];
 
 const fakeClient: DownloadClient = {
   async test() {},
   async addRelease(release: ReleaseToAdd) {
-    const downloadId = `e2e-${grabbed.length + 1}`;
+    const downloadId = `e2e-${++downloadCounter}`;
     const dir = path.join(downloadsDir, release.title);
     fs.mkdirSync(dir, { recursive: true });
     const season = /\.S(\d+)\./.exec(release.title);
@@ -78,24 +80,25 @@ const fakeClient: DownloadClient = {
       const base = season ? release.title.replace(/\.S(\d+)\./, `.S$1E${pad(e)}.`) : release.title;
       fs.writeFileSync(path.join(dir, `${base}.mkv`), Buffer.alloc(4096 + ++fileCounter, e));
     }
-    refreshes = 0; // each new grab starts its own two-refresh countdown
-    grabbed.push({ downloadId, title: release.title, dir });
+    grabbed.push({ downloadId, title: release.title, dir, doneAt: refreshes + 2 });
     return downloadId;
   },
   async getItems(): Promise<DownloadClientItem[]> {
-    const done = refreshes >= 2;
-    return grabbed.map((g) => ({
-      downloadId: g.downloadId,
-      title: g.title,
-      category: 'tv',
-      totalSize: 1_500_000_000,
-      remainingSize: done ? 0 : 750_000_000,
-      remainingTimeSeconds: done ? 0 : 60,
-      status: done ? 'completed' : 'downloading',
-      outputPath: g.dir,
-      canBeRemoved: done,
-      canMoveFiles: done,
-    }));
+    return grabbed.map((g) => {
+      const done = refreshes >= g.doneAt;
+      return {
+        downloadId: g.downloadId,
+        title: g.title,
+        category: 'tv',
+        totalSize: 1_500_000_000,
+        remainingSize: done ? 0 : 750_000_000,
+        remainingTimeSeconds: done ? 0 : 60,
+        status: done ? 'completed' : 'downloading',
+        outputPath: g.dir,
+        canBeRemoved: done,
+        canMoveFiles: done,
+      };
+    });
   },
   async removeItem(downloadId) {
     const i = grabbed.findIndex((g) => g.downloadId === downloadId);

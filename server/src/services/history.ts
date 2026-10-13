@@ -62,11 +62,20 @@ export function recordGrabbed(app: FastifyInstance, input: HistoryEventInput): H
   return recordEvent(app, 'grabbed', input);
 }
 
+/**
+ * The grabbed rows (one per episode) of the latest grab with this download id. A client can hand out an id
+ * again (a torrent hash grabbed a second time, a client that numbers its queue), and the tracked download is
+ * the latest grab, not a mix of every release ever grabbed under the id.
+ */
 export function findGrabbedByDownloadId(db: Db, downloadId: string): HistoryRow[] {
-  return db
+  const rows = db
     .select()
     .from(schema.history)
     .where(eq(schema.history.downloadId, downloadId))
     .all()
     .filter((r) => r.eventType === 'grabbed');
+  if (rows.length <= 1) return rows;
+  // One grab writes its rows in one transaction: same date and source title, consecutive ids.
+  const latest = rows.reduce((a, b) => (b.date > a.date || (b.date === a.date && b.id > a.id) ? b : a));
+  return rows.filter((r) => r.date === latest.date && r.sourceTitle === latest.sourceTitle && r.seriesId === latest.seriesId);
 }

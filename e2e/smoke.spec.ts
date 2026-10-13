@@ -117,10 +117,9 @@ test.describe('smoke', () => {
   });
 
   test('5. queue shows the download, refreshes import it', async ({}, testInfo) => {
-    // Open issue: on the mobile run (second grab, webhook connection already configured) the import of
-    // the 'Ended Show' pack never completes: the queue item stays importPending with 'Not an upgrade for
-    // existing episode file(s)' and no downloadFolderImported history. Desktop passes. Root cause not found.
-    test.fixme(isMobile(testInfo), 'second import in the same server run stays importPending; see comment');
+    // The mobile run is the second grab and import on this server: each download gets its own id and its
+    // own two-refresh countdown, and the queue must still empty.
+    void testInfo;
     await visit(page, '/activity/queue');
     await expect(page.getByText(/WEB-DL-E2E/).first()).toBeVisible();
     await expect(page.getByRole('progressbar').first(), 'queue item progress bar').toBeVisible();
@@ -170,10 +169,10 @@ test.describe('smoke', () => {
   });
 
   test('7. webhook connection test', async ({}, testInfo) => {
-    // Open issue: on the mobile run this step times out (cause not found; same area as step 5, the second
-    // import in one server run). Desktop passes.
-    test.fixme(isMobile(testInfo), 'times out on the mobile run; see step 5');
+    // The desktop run already created 'E2E Webhook' and its test call already reached /e2e-hook, so the
+    // mobile run uses its own name and checks that the hook count grows rather than that it is non-zero.
     const name = isMobile(testInfo) ? 'E2E Webhook Mobile' : 'E2E Webhook';
+    const hooksBefore = ((await (await request.get(`${AUX}/e2e-hook`)).json()) as unknown[]).length;
     await visit(page, '/settings/connect');
     await page.getByRole('button', { name: 'Add Connection' }).first().click();
     await page.getByRole('button', { name: /Webhook/ }).first().click();
@@ -181,8 +180,8 @@ test.describe('smoke', () => {
     await page.getByLabel(/^URL/).fill(`${AUX}/e2e-hook`);
     await page.getByRole('dialog').getByRole('button', { name: 'Test', exact: true }).click();
     await expect(page.getByText('Test succeeded').first()).toBeVisible();
-    const hooks = await (await request.get(`${AUX}/e2e-hook`)).json();
-    expect(hooks.length, 'webhook test should have reached /e2e-hook').toBeGreaterThan(0);
+    const hooks = (await (await request.get(`${AUX}/e2e-hook`)).json()) as unknown[];
+    expect(hooks.length, 'webhook test should have reached /e2e-hook').toBeGreaterThan(hooksBefore);
     await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByRole('button', { name: `Edit ${name}` })).toBeVisible();
   });

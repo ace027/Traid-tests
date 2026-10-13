@@ -110,6 +110,19 @@ describe('apiFetch', () => {
     expect(headers['X-Requested-With']).toBe('XMLHttpRequest');
   });
 
+  it('on 401 does not navigate to login while first-run setup is required', async () => {
+    const assign = vi.fn();
+    vi.stubGlobal('location', { ...window.location, pathname: '/', assign });
+    const fn = vi.fn(async (input: RequestInfo | URL) =>
+      String(input) === '/initialize.json'
+        ? json({ ...init, urlBase: '', apiKey: '', setupRequired: true, authenticated: false })
+        : json({ message: 'Unauthorized' }, 401),
+    );
+    vi.stubGlobal('fetch', fn);
+    await expect(apiFetch('tag')).rejects.toMatchObject({ status: 401 });
+    expect(assign).not.toHaveBeenCalled();
+  });
+
   it('on 401 resets the initialize cache and navigates to the login page', async () => {
     const assign = vi.fn();
     vi.stubGlobal('location', { ...window.location, pathname: '/sonarr/settings', assign });

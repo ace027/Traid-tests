@@ -137,7 +137,7 @@ async function readBody(res: Response): Promise<unknown> {
  * JSON, parses the JSON response and throws ApiError for non-2xx statuses.
  */
 export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promise<T> {
-  const { apiKey, urlBase } = await loadInitialize();
+  const { apiKey, urlBase, setupRequired } = await loadInitialize();
   const headers: Record<string, string> = {
     Accept: 'application/json',
     // Marks the request as script-originated; the server requires it (or JSON) for cookie-auth writes.
@@ -158,7 +158,8 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
   });
 
   const data = await readBody(res);
-  if (res.status === 401) {
+  // While first-run setup is pending, AuthGate owns the redirect (to /setup); /login would win the race.
+  if (res.status === 401 && !setupRequired) {
     resetInitializeCache();
     redirectToLogin(urlBase);
   }
