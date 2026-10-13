@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Download, FlaskConical, Plus } from 'lucide-react';
 import { downloadClientImplementations, type DownloadClientImplementation, type DownloadClientResource } from '@sonarr/shared';
-import { Badge, Button, EmptyState, PageHeader, Spinner } from '../../components/ui';
+import { Badge, Button, Card, EmptyState, FormField, PageHeader, Spinner, Switch } from '../../components/ui';
+import { useDownloadClientConfig, useSaveDownloadClientConfig } from './mediaHooks';
 import {
   DownloadClientModal,
   clientLabel,
@@ -12,6 +13,39 @@ import {
 import { ProtocolBadge, ProviderTemplatePicker, useTestAllProviders } from './IndexerModal';
 import { FeatureChip, ProviderCard } from './Indexers';
 import { errorMessage } from './hooks';
+
+function CompletedDownloadHandling() {
+  const config = useDownloadClientConfig();
+  const save = useSaveDownloadClientConfig();
+  return (
+    <Card title="Completed Download Handling" description="How Sonarr imports and recovers downloads." className="mb-5">
+      {config.isPending ? (
+        <Spinner label="Loading download handling settings" />
+      ) : config.isError ? (
+        <p role="alert" className="text-sm text-danger">
+          {errorMessage(config.error)}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <FormField label="Enable" help="Import completed downloads from the download client." inline>
+            <Switch
+              checked={config.data.enableCompletedDownloadHandling}
+              disabled={save.isPending}
+              onCheckedChange={(v) => save.mutate({ enableCompletedDownloadHandling: v })}
+            />
+          </FormField>
+          <FormField label="Redownload failed" help="Search for a different release when a download fails." inline>
+            <Switch
+              checked={config.data.autoRedownloadFailed}
+              disabled={save.isPending}
+              onCheckedChange={(v) => save.mutate({ autoRedownloadFailed: v })}
+            />
+          </FormField>
+        </div>
+      )}
+    </Card>
+  );
+}
 
 export function DownloadClients() {
   const clients = useDownloadClients();
@@ -56,6 +90,7 @@ export function DownloadClients() {
           </>
         }
       />
+      <CompletedDownloadHandling />
       {clients.isPending ? (
         <Spinner label="Loading download clients" />
       ) : clients.isError ? (

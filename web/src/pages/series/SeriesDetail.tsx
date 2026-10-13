@@ -1,11 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Pencil, RefreshCw, Search, SearchX, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileEdit, Pencil, RefreshCw, Search, SearchX, Trash2 } from 'lucide-react';
 import type { Episode, EpisodeFile, Series } from '@sonarr/shared';
 import { Badge, Button, EmptyState, Spinner, Switch, buttonClasses } from '../../components/ui';
 import { DeleteSeriesModal } from './DeleteSeriesModal';
 import { EditSeriesModal } from './EditSeriesModal';
 import { InteractiveSearchModal, type InteractiveSearchTarget } from './InteractiveSearchModal';
+import { RenamePreviewModal } from './RenamePreviewModal';
 import { SeasonSection } from './SeasonSection';
 import { PosterImage } from './SeriesPoster';
 import {
@@ -116,12 +117,11 @@ function Detail({ series }: { series: Series }) {
   const filesQuery = useEpisodeFiles(series.id);
   const update = useUpdateSeries();
   const refresh = useRunCommand();
-  // TODO(03-05 escalation): the plan drops this special case, but series.test.tsx (outside this
-  // plan's files) still asserts the info toast. Remove once that test is updated.
-  const search = useRunCommand({ unknownCommandMessage: 'Searching is available once indexers are configured' });
+  const search = useRunCommand();
   const [editOpen, setEditOpen] = useState(false);
   const [interactive, setInteractive] = useState<InteractiveSearchTarget | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
 
   const bySeason = useMemo(() => {
     const map = new Map<number, Episode[]>();
@@ -164,6 +164,9 @@ function Detail({ series }: { series: Series }) {
         onClick={() => search.mutate({ name: 'SeriesSearch', body: { seriesId: series.id }, label: `search for ${series.title}` })}
       >
         Search Monitored
+      </Button>
+      <Button size="sm" icon={<FileEdit aria-hidden="true" />} onClick={() => setRenameOpen(true)}>
+        Preview rename
       </Button>
       <Button size="sm" icon={<Pencil aria-hidden="true" />} onClick={() => setEditOpen(true)}>
         Edit
@@ -217,6 +220,7 @@ function Detail({ series }: { series: Series }) {
 
       <EditSeriesModal series={series} open={editOpen} onClose={() => setEditOpen(false)} />
       <DeleteSeriesModal series={series} open={deleteOpen} onClose={() => setDeleteOpen(false)} />
+      {renameOpen && <RenamePreviewModal seriesId={series.id} onClose={() => setRenameOpen(false)} />}
       {interactive && <InteractiveSearchModal series={series} target={interactive} onClose={() => setInteractive(null)} />}
     </div>
   );

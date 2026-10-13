@@ -12,6 +12,7 @@ import {
   Pause,
   RefreshCw,
   TriangleAlert,
+  FolderInput,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -23,6 +24,7 @@ import { ProtocolBadge } from '../settings/IndexerModal';
 import { errorMessage, formatBytes } from '../settings/hooks';
 import { useSeriesList } from '../series/hooks';
 import { episodeCode } from '../series/SeasonSection';
+import { ManualImportModal } from './ManualImportModal';
 import { RemoveQueueItemModal } from './RemoveQueueItemModal';
 import {
   formatTimeLeft,
@@ -215,6 +217,7 @@ export function Queue() {
   const removeMany = useRemoveQueueItems();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [toRemove, setToRemove] = useState<QueueResource[]>([]);
+  const [toImport, setToImport] = useState<QueueResource | null>(null);
   const unknownSwitchId = useId();
 
   const records = queue.data?.records ?? [];
@@ -430,7 +433,18 @@ export function Queue() {
                         <Progress item={item} />
                       </Td>
                       <Td className="whitespace-nowrap tabular-nums">{formatTimeLeft(item.timeleft)}</Td>
-                      <Td>
+                      <Td className="whitespace-nowrap">
+                        {item.trackedDownloadState === 'importPending' && displayStatus(item) === 'warning' && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            aria-label={`Manual import ${item.title}`}
+                            icon={<FolderInput aria-hidden="true" />}
+                            onClick={() => setToImport(item)}
+                          >
+                            Manual import
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -477,6 +491,14 @@ export function Queue() {
         </div>
       )}
 
+      {toImport && (
+        <ManualImportModal
+          key={toImport.id}
+          downloadId={toImport.downloadId}
+          title={toImport.title}
+          onClose={() => setToImport(null)}
+        />
+      )}
       {toRemove.length > 0 && (
         <RemoveQueueItemModal
           key={toRemove.map((r) => r.id).join(',')}
