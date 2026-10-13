@@ -66,6 +66,7 @@ export function SeasonSection({
 }: SeasonSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = useId();
+  const headingId = useId();
   const monitorOne = useMonitorEpisode();
   const monitorMany = useMonitorEpisodes();
   const name = seasonName(season.seasonNumber);
@@ -78,7 +79,7 @@ export function SeasonSection({
 
   return (
     <section
-      aria-label={name}
+      aria-labelledby={headingId}
       className={cn(
         'overflow-hidden rounded-lg border bg-surface-raised shadow-sm',
         season.monitored ? 'border-border' : 'border-border opacity-90',
@@ -91,7 +92,7 @@ export function SeasonSection({
           disabled={seasonToggleDisabled}
           aria-label={`Monitor ${name}`}
         />
-        <h3 className="min-w-0 flex-1">
+        <h3 id={headingId} className="min-w-0 flex-1">
           <button
             type="button"
             aria-expanded={open}
@@ -141,12 +142,11 @@ export function SeasonSection({
                     const file = ep.episodeFileId ? files.get(ep.episodeFileId) : undefined;
                     return (
                       <Tr key={ep.id} data-testid={`episode-${ep.id}`}>
-                        <Td>
+                        <Td className="min-h-11 py-2">
                           <Switch
                             checked={ep.monitored}
                             onCheckedChange={(monitored) => monitorOne.mutate({ id: ep.id, monitored })}
                             aria-label={`Monitor ${episodeCode(ep)} ${ep.title}`}
-                            className="scale-90"
                           />
                         </Td>
                         <Td className="text-text-muted tabular-nums">{ep.episodeNumber}</Td>

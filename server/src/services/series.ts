@@ -385,14 +385,41 @@ export function deleteSeries(app: FastifyInstance, id: number, deleteFiles: bool
   const db = app.db;
   const row = db.select().from(schema.series).where(eq(schema.series.id, id)).get();
   if (!row) return false;
-  if (deleteFiles && fs.existsSync(row.path)) {
-    const real = fs.realpathSync(row.path);
-    if (!realRootFolders(db).some((r) => isInside(r.real, real))) {
-      throw validationError('deleteFiles', 'Series folder is not inside a configured root folder');
+  let toRemove: string | undefined;
+  if (deleteFiles) {
+    let real: string | undefined;
+    try {
+      real = fs.realpathSync(row.path);
+    } catch {
+      real = undefined; // folder already gone
     }
-    fs.rmSync(real, { recursive: true, force: true });
+    if (real !== undefined) {
+      if (!realRootFolders(db).some((r) => isInside(r.real, real))) {
+        throw validationError('deleteFiles', 'Series folder is not inside a configured root folder');
+      }
+      const others = db.select({ path: schema.series.path }).from(schema.series).all().filter((o) => o.path !== row.path);
+      const shared = others.some((o) => {
+        let other = o.path;
+        try {
+          other = fs.realpathSync(o.path);
+        } catch {
+          // keep logical path
+        }
+        return isInside(real, other);
+      });
+      if (shared) throw validationError('deleteFiles', 'Series folder is shared with or contains another series');
+      toRemove = real;
+    }
   }
   db.delete(schema.series).where(eq(schema.series.id, id)).run();
+  if (toRemove) {
+    try {
+      fs.rmSync(toRemove, { recursive: true, force: true });
+    } catch (e) {
+      app.events.publish('series', 'deleted', { id });
+      throw validationError('deleteFiles', `Series was removed but its folder could not be deleted: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
   app.events.publish('series', 'deleted', { id });
   return true;
 }

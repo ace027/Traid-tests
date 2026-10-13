@@ -140,10 +140,7 @@ function Detail({ series }: { series: Series }) {
   const toggleSeason = (seasonNumber: number, monitored: boolean) =>
     update.mutate({
       id: series.id,
-      seasons: series.seasons.map((s) => ({
-        seasonNumber: s.seasonNumber,
-        monitored: s.seasonNumber === seasonNumber ? monitored : s.monitored,
-      })),
+      seasons: [{ seasonNumber, monitored }],
     });
 
   const actions = (

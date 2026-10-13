@@ -38,18 +38,26 @@ function seasonFromFolder(name: string): number | undefined {
   return undefined;
 }
 
+const EPISODE_PREFIXED_RE = /^(?:e|ep|episode)[ ._-]*(\d{1,3})(?!\d)/i;
+const LEADING_NUMBER_RE = /^(\d{1,3})(?![\dp])/i;
+const DASH_NUMBER_RE = /\s-\s(\d{1,3})(?:\s|$|\.)/;
+
+type FileMeta = Pick<ParsedEpisodeInfo, 'quality' | 'releaseGroup'>;
+type ParsedFile =
+  | { kind: 'title'; parsed: ParsedEpisodeInfo }
+  | ({ kind: 'folder'; season: number; episode: number } & FileMeta);
+
 /** Parses a file name, falling back to the 'Season N' parent folder for the season number. */
-function parseFile(file: string): ParsedEpisodeInfo | { fallback: { season: number; episode: number } & Pick<ParsedEpisodeInfo, 'quality' | 'releaseGroup'> } | null {
+function parseFile(file: string): ParsedFile | null {
   const base = path.basename(file);
   const parsed = parseTitle(base);
-  if (parsed && (parsed.isDaily || parsed.isAbsoluteNumbering || parsed.episodeNumbers.length > 0)) return parsed;
+  if (parsed && (parsed.isDaily || parsed.isAbsoluteNumbering || parsed.episodeNumbers.length > 0)) return { kind: 'title', parsed };
   const season = seasonFromFolder(path.basename(path.dirname(file)));
   if (season === undefined) return null;
   const stem = base.slice(0, base.length - path.extname(base).length);
-  const m = /^(?:e|ep|episode)[ ._-]*(\d{1,3})(?!\d)/i.exec(stem) ?? /^(\d{1,3})(?![\dp])/i.exec(stem) ?? /\s-\s(\d{1,3})(?:\s|$|\.)/.exec(stem);
+  const m = EPISODE_PREFIXED_RE.exec(stem) ?? LEADING_NUMBER_RE.exec(stem) ?? DASH_NUMBER_RE.exec(stem);
   if (!m) return null;
-  const q = parseQuality(stem);
-  return { fallback: { season, episode: Number(m[1]), quality: q, releaseGroup: undefined } };
+  return { kind: 'folder', season, episode: Number(m[1]), quality: parseQuality(stem), releaseGroup: undefined };
 }
 
 interface WalkResult {
@@ -201,20 +209,21 @@ export async function scanSeries(app: FastifyInstance, seriesId: number): Promis
     }
     let matched: EpisodeRow[] = [];
     let meta: Pick<ParsedEpisodeInfo, 'quality' | 'releaseGroup'>;
-    if ('fallback' in p) {
-      const e = bySE.get(`${p.fallback.season}:${p.fallback.episode}`);
+    if (p.kind === 'folder') {
+      const e = bySE.get(`${p.season}:${p.episode}`);
       if (e) matched = [e];
-      meta = p.fallback;
-    } else {
       meta = p;
-      if (p.isDaily && p.airDate) {
-        matched = byDate.get(p.airDate) ?? [];
+    } else {
+      const t = p.parsed;
+      meta = t;
+      if (t.isDaily && t.airDate) {
+        matched = byDate.get(t.airDate) ?? [];
       } else {
-        if (p.isAbsoluteNumbering) {
-          matched = p.absoluteEpisodeNumbers.flatMap((n) => byAbs.get(n) ?? []);
+        if (t.isAbsoluteNumbering) {
+          matched = t.absoluteEpisodeNumbers.flatMap((n) => byAbs.get(n) ?? []);
         }
-        if (matched.length === 0 && p.episodeNumbers.length > 0) {
-          matched = p.episodeNumbers.flatMap((n) => bySE.get(`${p.seasonNumber}:${n}`) ?? []);
+        if (matched.length === 0 && t.episodeNumbers.length > 0) {
+          matched = t.episodeNumbers.flatMap((n) => bySE.get(`${t.seasonNumber}:${n}`) ?? []);
         }
       }
     }

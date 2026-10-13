@@ -109,7 +109,6 @@ export function SeriesPoster({ series }: { series: Series }) {
     <li className="group">
       <Link
         to={`/series/${series.titleSlug}`}
-        aria-label={series.title}
         className="focus-ring block rounded-lg border border-border bg-surface-raised p-1.5 shadow-sm transition-[transform,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-md"
       >
         <div className="relative">
@@ -122,8 +121,10 @@ export function SeriesPoster({ series }: { series: Series }) {
             title={series.monitored ? 'Monitored' : 'Unmonitored'}
           >
             <Bookmark aria-hidden="true" className={cn('size-5', series.monitored && 'fill-current')} />
+            <span className="sr-only">{series.monitored ? 'Monitored' : 'Unmonitored'}</span>
           </span>
           <div
+            aria-hidden="true"
             className={cn(
               'absolute inset-0 flex flex-col justify-end gap-1.5 rounded-md bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2.5',
               'opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100',

@@ -164,7 +164,7 @@ describe('Series index', () => {
     const { container } = renderAt('/', <SeriesIndex />, '/');
     const grid = await screen.findByRole('list', { name: 'Series' });
     const links = within(grid).getAllByRole('link');
-    expect(links.map((l) => l.getAttribute('aria-label'))).toEqual(['Andor', 'Breaking Bad', 'Chernobyl']);
+    expect(links.map((l) => l.querySelector('p.truncate')?.textContent)).toEqual(['Andor', 'Breaking Bad', 'Chernobyl']);
     expect(links[0]).toHaveAttribute('href', '/series/andor');
     expect(within(links[0]).getByTestId('poster-fallback')).toHaveTextContent('A');
     expect(screen.getByRole('button', { name: 'Posters' })).toHaveAttribute('aria-pressed', 'true');
@@ -240,7 +240,7 @@ describe('Series detail', () => {
     expect(api.callsTo('GET', 'episode')[0]?.query.get('seriesId')).toBe('1');
 
     const seasons = await screen.findAllByRole('region', { name: /Season|Specials/ });
-    expect(seasons.map((s) => s.getAttribute('aria-label'))).toEqual(['Season 2', 'Season 1', 'Specials']);
+    expect(seasons.map((s) => s.querySelector('h3 button > span')?.textContent)).toEqual(['Season 2', 'Season 1', 'Specials']);
 
     // Season 2 is open by default.
     const s2 = seasons[0];
@@ -272,18 +272,14 @@ describe('Series detail', () => {
     expect(api.callsTo('PUT', 'episode/monitor')[0].body).toEqual({ episodeIds: [201, 202], monitored: false });
   });
 
-  it('toggles a season with PUT series including all seasons', async () => {
+  it('toggles a season with PUT series containing only that season', async () => {
     api = mockApi(detailRoutes({ 'PUT series/:id': (req) => ({ ...makeSeries(), ...(req.body as object) }) }));
     const user = userEvent.setup();
     renderDetail();
     await user.click(await screen.findByRole('switch', { name: 'Monitor Season 1' }));
     await waitFor(() => expect(api.callsTo('PUT', 'series/1')).toHaveLength(1));
     expect(api.callsTo('PUT', 'series/1')[0].body).toEqual({
-      seasons: [
-        { seasonNumber: 0, monitored: false },
-        { seasonNumber: 1, monitored: false },
-        { seasonNumber: 2, monitored: true },
-      ],
+      seasons: [{ seasonNumber: 1, monitored: false }],
     } satisfies UpdateSeriesInput);
   });
 
