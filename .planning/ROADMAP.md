@@ -5,7 +5,7 @@
 - [x] Phase 1: Foundation and App Shell (4 plans)
 - [x] Phase 2: Series Library (4 plans)
 - [x] Phase 3: Indexers, Search and Download Clients (4 plans)
-- [ ] Phase 4: Import, Activity, Wanted and Calendar (4 plans)
+- [x] Phase 4: Import, Activity, Wanted and Calendar (4 plans)
 - [ ] Phase 5: Connections, System and Polish (3 plans)
 
 ## Phase Details
@@ -72,5 +72,5 @@
 | 1 | 4 | 4 | Complete |
 | 2 | 4 | 4 | Complete |
 | 3 | 5 | 5 | Complete |
-| 4 | 5 | 5 | Executed |
+| 4 | 5 | 5 | Complete |
 | 5 | 3 | 0 | Pending |
