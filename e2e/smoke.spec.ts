@@ -139,10 +139,9 @@ test.describe('smoke', () => {
       .toBe(true);
   });
 
-  test('5. queue shows the download, refreshes import it', async ({}, testInfo) => {
+  test('5. queue shows the download, refreshes import it', async () => {
     // The mobile run is the second grab and import on this server: each download gets its own id and its
     // own two-refresh countdown, and the queue must still empty.
-    void testInfo;
     await visit(page, '/activity/queue');
     await expect(page.getByText(/WEB-DL-E2E/).first()).toBeVisible();
     await expect(page.getByRole('progressbar').first(), 'queue item progress bar').toBeVisible();
@@ -180,11 +179,11 @@ test.describe('smoke', () => {
     await expect(page.getByRole('table').getByText(/^(Imported|Episode Imported)$/).first()).toBeVisible();
   });
 
-  test('6. system status and Housekeeping task', async ({}, testInfo) => {
+  test('6. system status and Housekeeping task', async () => {
     await visit(page, '/system/status');
     await expect(page.getByRole('heading', { name: 'System', level: 1 })).toBeVisible();
-    await expect(page.getByText(/error/i).first().or(page.getByText('No issues'))).toBeVisible();
-    await expect(page.locator('[data-health-level="error"]')).toHaveCount(0);
+    // Health items render a StatusBadge; an error-level item shows the exact label "Error".
+    await expect(page.getByText('Error', { exact: true })).toHaveCount(0);
 
     await visit(page, '/system/tasks');
     type Cmd = { id: number; name: string; status: string };
@@ -205,7 +204,6 @@ test.describe('smoke', () => {
     // The Tasks queue table shows the new run as Completed without a reload.
     await expect(completedRows, 'Tasks queue should show the new run as Completed').toHaveCount(completedBefore + 1);
     expect(await page.evaluate(() => (window as unknown as { __live?: boolean }).__live), 'page must not have reloaded').toBe(true);
-    void testInfo;
   });
 
   test('7. webhook connection test', async ({}, testInfo) => {

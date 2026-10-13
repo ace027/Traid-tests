@@ -81,6 +81,30 @@ describe('backup service', () => {
     expect(() => stageRestore(t!.app, 'missing.zip')).toThrow(/not found/);
   });
 
+  it('rejects a foreign SQLite file and a newer-schema database', async () => {
+    t = await createTestApp();
+    const restore = path.join(t.dataDir, 'restore', 'sonarr.db');
+    const make = (setup: (db: Database.Database) => void) => {
+      const f = path.join(t!.dataDir, `x-${Math.random()}.db`);
+      const db = new Database(f);
+      setup(db);
+      db.close();
+      return zipBuffer([{ name: 'sonarr.db', data: fs.readFileSync(f) }]);
+    };
+    const foreign = make((db) => db.exec('CREATE TABLE foo (a)'));
+    expect(() => stageRestore(t!.app, foreign)).toThrow(/not a Sonarr database/);
+    const newer = zipBuffer([{ name: 'sonarr.db', data: (() => {
+      const f = path.join(t!.dataDir, 'newer.db');
+      t!.app.sqlite.prepare('VACUUM INTO ?').run(f);
+      const db = new Database(f);
+      db.prepare("INSERT INTO schema_migrations (version, applied_at) VALUES ('9999_future', 'x')").run();
+      db.close();
+      return fs.readFileSync(f);
+    })() }]);
+    expect(() => stageRestore(t!.app, newer)).toThrow(/newer version/);
+    expect(fs.existsSync(restore)).toBe(false);
+  });
+
   it('applies a staged restore on the next build (WAL database)', async () => {
     t = await createTestApp();
     addSeries(t.app, 1);

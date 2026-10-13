@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
 import type { FastifyInstance } from 'fastify';
 import type { BackupResource, BackupType } from '@sonarr/shared';
@@ -35,14 +36,17 @@ export function createBackup(app: FastifyInstance, type: 'manual' | 'scheduled',
   const tmpDb = path.join(tmpDir, `backup-${process.pid}-${Date.now()}.db`);
   const name = `sonarr_backup_v${version}_${stamp(now)}.zip`;
   const dest = path.join(destDir, name);
+  const partial = `${dest}.tmp`; // not listed (no .zip suffix) until complete
   try {
     app.sqlite.prepare('VACUUM INTO ?').run(tmpDb);
-    writeZip(dest, [
+    writeZip(partial, [
       { name: 'sonarr.db', data: fs.readFileSync(tmpDb) },
       { name: 'version.txt', data: Buffer.from(`${version}\n`) },
     ]);
+    fs.renameSync(partial, dest);
   } finally {
     fs.rmSync(tmpDb, { force: true });
+    fs.rmSync(partial, { force: true });
   }
   const resource = listBackups(app).find((b) => b.name === name && b.type === type);
   if (!resource) throw new BackupError('Backup was not created', 500);
@@ -88,6 +92,20 @@ export function deleteBackup(app: Pick<FastifyInstance, 'dataDir'>, name: string
   return true;
 }
 
+const migrationsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'db', 'migrations');
+
+/** Returns why the database is not a Sonarr database this build can run, or undefined when it is fine. */
+function checkSchema(db: Database.Database): string | undefined {
+  const tables = new Set((db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((r) => r.name));
+  for (const t of ['config', 'series', 'schema_migrations']) {
+    if (!tables.has(t)) return 'not a Sonarr database';
+  }
+  const known = new Set(fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).map((f) => f.replace(/\.sql$/, '')));
+  const applied = (db.prepare('SELECT version FROM schema_migrations').all() as { version: string }[]).map((r) => r.version);
+  if (applied.some((v) => !known.has(v))) return 'database was created by a newer version';
+  return undefined;
+}
+
 /**
  * Validates a backup (zip buffer or the name of a listed backup) and stages its database at
  * dataDir/restore/sonarr.db. openDb applies it on the next start.
@@ -116,11 +134,13 @@ export function stageRestore(app: Pick<FastifyInstance, 'dataDir'>, source: Buff
   const tmp = path.join(dir, 'sonarr.db.tmp');
   fs.writeFileSync(tmp, db);
   let ok = false;
+  let schemaProblem: string | undefined;
   try {
     const check = new Database(tmp, { readonly: true });
     try {
       const rows = check.pragma('integrity_check') as { integrity_check: string }[];
       ok = rows.length === 1 && rows[0]!.integrity_check === 'ok';
+      if (ok) schemaProblem = checkSchema(check);
     } finally {
       check.close();
     }
@@ -130,6 +150,10 @@ export function stageRestore(app: Pick<FastifyInstance, 'dataDir'>, source: Buff
   if (!ok) {
     fs.rmSync(tmp, { force: true });
     throw new BackupError('Invalid backup: database failed the integrity check');
+  }
+  if (schemaProblem) {
+    fs.rmSync(tmp, { force: true });
+    throw new BackupError(`Invalid backup: ${schemaProblem}`);
   }
   for (const ext of ['-wal', '-shm']) fs.rmSync(`${tmp}${ext}`, { force: true });
   fs.renameSync(tmp, path.join(dir, 'sonarr.db'));

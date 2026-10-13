@@ -40,7 +40,18 @@ Set **URL base** (Settings > General) to serve Sonarr under a sub-path such as `
 - Everything outside the base (including `/sonarrx`) returns `404 {"message":"NotFound"}`.
 - `/ping` answers both at the root and under the base, for health checks.
 
-The server does not yet serve the built web UI. When you host `web/dist` under a URL base, add `<base href="/sonarr/">` to its `index.html`. The client derives its URL base from `<base href>` to find `initialize.json`, and assumes the root without one.
+The server serves the built web UI itself and injects `<base href>` for the configured URL base automatically, so do not add one by hand. The client derives its URL base from that tag to find `initialize.json`.
+
+## Notifications
+Settings > Connect supports Webhook, Discord and Email (SMTP) notifications. Secrets (webhook credentials, Discord webhook URL, SMTP password) are returned by the API as `********`; saving a form with the placeholder keeps the stored value.
+
+## Backup and restore
+System > Backup creates manual backups and the server creates scheduled ones, stored as zip files under `<SONARR_DATA>/Backups/{manual,scheduled,update}`. Scheduled backups older than 28 days are removed.
+
+Restoring (from a listed backup or an uploaded zip) only stages the database at `<SONARR_DATA>/restore/sonarr.db`. It is applied on the next start, so restart the server afterwards. The previous database is kept as `sonarr.db.pre-restore` in the data directory.
+
+## Log files
+Logs are written to `<SONARR_DATA>/logs` and are listed and downloadable under System > Log Files. Secrets are masked as `********`.
 
 ## Running
 

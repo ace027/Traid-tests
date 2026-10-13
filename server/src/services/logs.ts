@@ -87,7 +87,14 @@ export class LogService {
     const text = oneLine(entry.message) + (entry.exception ? `|${oneLine(entry.exception)}` : '');
     const line = `${formatTime(time)}|${LEVEL_LABEL[entry.level]}|${entry.logger}|${text}\n`;
     try {
-      if (this.size > 0 && this.size + Buffer.byteLength(line) > this.maxBytes) this.rotate();
+      if (this.size > 0 && this.size + Buffer.byteLength(line) > this.maxBytes) {
+        try {
+          this.rotate();
+        } catch {
+          // Rotation failed (EBUSY/EPERM): keep appending to the active file and do not retry on every write.
+          this.size = 0;
+        }
+      }
       fs.appendFileSync(path.join(this.dir, ACTIVE_FILE), line);
       this.size += Buffer.byteLength(line);
     } catch {

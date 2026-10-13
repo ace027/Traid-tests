@@ -50,7 +50,7 @@ export async function staticUi(app: FastifyInstance, opts: StaticUiOptions): Pro
     cacheControl: false,
     globIgnore: ['index.html'],
     setHeaders: (reply, filePath) => {
-      const hashed = filePath.split(path.sep).includes('assets');
+      const hashed = path.relative(root, filePath).split(path.sep)[0] === 'assets';
       reply.header('cache-control', hashed ? 'public, max-age=31536000, immutable' : 'no-cache');
     },
   });

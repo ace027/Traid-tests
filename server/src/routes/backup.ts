@@ -50,7 +50,7 @@ function defaultLifecycle(app: FastifyInstance): Lifecycle {
     async restart() {
       await app.close();
       const { spawn } = await import('node:child_process');
-      const child = spawn(process.execPath, process.argv.slice(1), { detached: true, stdio: 'ignore', env: process.env });
+      const child = spawn(process.execPath, [...process.execArgv, ...process.argv.slice(1)], { detached: true, stdio: 'ignore', env: process.env });
       child.unref();
       process.exit(0);
     },
