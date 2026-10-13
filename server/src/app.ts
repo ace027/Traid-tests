@@ -13,9 +13,13 @@ import { rootFolderRoutes } from './routes/rootfolder.js';
 import { seriesRoutes } from './routes/series.js';
 import { readVersion, systemRoutes } from './routes/system.js';
 import { tagRoutes } from './routes/tag.js';
+import { episodeRoutes } from './routes/episode.js';
+import { episodeFileRoutes } from './routes/episodefile.js';
 import { AuthService } from './services/auth.js';
 import { CommandQueue } from './services/commands.js';
+import { registerRescanCommand } from './services/diskScan.js';
 import { EventBus } from './services/events.js';
+import { registerRefreshCommand } from './services/refresh.js';
 import { ensureHostConfig, getHostConfig, saveHostConfig } from './services/hostConfig.js';
 import type { MetadataProvider } from './services/metadata/types.js';
 import { TvMazeProvider } from './services/metadata/tvmaze.js';
@@ -106,6 +110,8 @@ export async function buildApp({ dataDir, logger = false, metadataProvider }: Bu
   commands.register('Housekeeping', async () => {});
   app.decorate('events', events);
   app.decorate('commands', commands);
+  registerRefreshCommand(app);
+  registerRescanCommand(app);
   app.addHook('onClose', async () => {
     await commands.close();
     sqlite.close();
@@ -161,6 +167,8 @@ export async function buildApp({ dataDir, logger = false, metadataProvider }: Bu
   await app.register(rootFolderRoutes);
   await app.register(tagRoutes);
   await app.register(seriesRoutes);
+  await app.register(episodeRoutes);
+  await app.register(episodeFileRoutes);
   await app.register(qualityRoutes);
   await app.register(configRoutes);
   await app.register(commandRoutes);
