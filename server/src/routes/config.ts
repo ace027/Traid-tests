@@ -1,4 +1,3 @@
-import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { hostConfigUpdateSchema, uiConfigSchema, validationError, type HostConfig } from '@sonarr/shared';
 import { schema } from '../db/index.js';
