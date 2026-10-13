@@ -8,11 +8,13 @@ import { schema } from '../db/index.js';
 import { parseTitle } from '../parser/index.js';
 import { pagingSchema } from '../routes/history.js';
 import { addToBlocklist } from './blocklist.js';
+import { downloadEvents, isFullyImported, processCompleted, processFailed, type HandlingOutcome } from './downloadHandling.js';
 import { findGrabbedByDownloadId, type HistoryRow } from './history.js';
+import { getDownloadClientConfig } from './mediaConfig.js';
 
 export const QUEUE_CACHE_MS = 5000;
 
-interface Match {
+export interface Match {
   seriesId: number;
   episodeIds: number[];
   quality: QualityModel;
@@ -20,7 +22,8 @@ interface Match {
   rows: HistoryRow[];
 }
 
-interface Tracked {
+/** A download client item linked (through the grabbed history) to a series; handed to download handling. */
+export interface TrackedDownload {
   id: number;
   key: string;
   clientId: number;
@@ -65,7 +68,11 @@ export class QueueService {
   private readonly ignored = new Set<string>();
   private readonly itemsByClient = new Map<number, { row: DownloadClientRow; items: DownloadClientItem[] }>();
   private readonly healthByClient = new Map<number, ClientHealth>();
-  private tracked: Tracked[] = [];
+  private tracked: TrackedDownload[] = [];
+  /** Result of the last completed-download handling per item key (warnings survive plain refreshes). */
+  private readonly outcomes = new Map<string, HandlingOutcome>();
+  /** Download ids (lowercase) with an import running; an import never runs twice concurrently. */
+  private readonly importing = new Set<string>();
   private nextId = 1;
   private lastRefresh = 0;
   private signature = '[]';
@@ -124,13 +131,82 @@ export class QueueService {
       this.firstSeen.delete(id);
     }
     for (const key of [...this.ignored]) if (!live.has(key)) this.ignored.delete(key);
-    const signature = JSON.stringify(
-      this.tracked.map((t) => [t.id, t.item.status, t.item.remainingSize, t.resource.trackedDownloadState]),
+    for (const key of [...this.outcomes.keys()]) if (!live.has(key)) this.outcomes.delete(key);
+    this.publishIfChanged();
+  }
+
+  private signatureOf(): string {
+    return JSON.stringify(
+      this.tracked.map((t) => [t.id, t.item.status, t.item.remainingSize, t.resource.trackedDownloadState, t.resource.statusMessages]),
     );
+  }
+
+  private publishIfChanged(): void {
+    const signature = this.signatureOf();
     if (signature !== this.signature) {
       this.signature = signature;
       this.app.events.publish('queue', 'updated');
     }
+  }
+
+  /** Runs fn unless an import for the same download id is already running (then resolves undefined). */
+  async withImportGuard<T>(downloadId: string, fn: () => Promise<T>): Promise<T | undefined> {
+    const key = downloadId.toLowerCase();
+    if (this.importing.has(key)) return undefined;
+    this.importing.add(key);
+    try {
+      return await fn();
+    } finally {
+      this.importing.delete(key);
+    }
+  }
+
+  /** The tracked item for a download id (case-insensitive), refreshing the cache when stale. */
+  async findByDownloadId(downloadId: string): Promise<TrackedDownload | undefined> {
+    await this.ensureFresh();
+    const id = downloadId.toLowerCase();
+    return this.tracked.find((t) => t.item.downloadId.toLowerCase() === id);
+  }
+
+  /**
+   * Completed and failed download handling for the current items: importPending items are imported (when
+   * enableCompletedDownloadHandling), failedPending items are blocklisted and searched again.
+   */
+  async processDownloads(): Promise<void> {
+    const handleCompleted = getDownloadClientConfig(this.app.db).enableCompletedDownloadHandling;
+    for (const t of [...this.tracked]) {
+      const state = t.resource.trackedDownloadState;
+      let outcome: HandlingOutcome | undefined;
+      try {
+        if (state === 'importPending' && handleCompleted && t.match) {
+          t.resource.trackedDownloadState = 'importing';
+          this.publishIfChanged();
+          outcome = await this.withImportGuard(t.item.downloadId, () => processCompleted(this.app, t));
+        } else if (state === 'failedPending' && t.match) {
+          outcome = await processFailed(this.app, t);
+        }
+      } catch (err) {
+        this.app.log.error({ err, downloadId: t.item.downloadId }, 'Download handling failed');
+        outcome = {
+          state,
+          status: 'warning',
+          statusMessages: [{ title: t.item.title, messages: [`Import failed: ${err instanceof Error ? err.message : String(err)}`] }],
+        };
+      }
+      if (!outcome) continue;
+      if (outcome.status) this.outcomes.set(t.key, outcome);
+      else this.outcomes.delete(t.key);
+      if (outcome.removed) this.forget(t);
+    }
+    this.tracked = this.build();
+    this.publishIfChanged();
+  }
+
+  /** Drops an item from the cached client items (after removing it from the client). */
+  private forget(t: TrackedDownload): void {
+    const entry = this.itemsByClient.get(t.clientId);
+    if (entry) entry.items = entry.items.filter((i) => i.downloadId !== t.item.downloadId);
+    this.outcomes.delete(t.key);
   }
 
   private idFor(key: string): number {
@@ -162,8 +238,8 @@ export class QueueService {
     return match;
   }
 
-  private build(): Tracked[] {
-    const out: Tracked[] = [];
+  private build(): TrackedDownload[] {
+    const out: TrackedDownload[] = [];
     const matches: { row: DownloadClientRow; item: DownloadClientItem; match: Match | null }[] = [];
     for (const { row, items } of this.itemsByClient.values()) {
       for (const item of items) {
@@ -190,11 +266,22 @@ export class QueueService {
       const id = this.idFor(key);
       const protocol = row.protocol as Protocol;
       const failed = item.status === 'failed';
-      const state: TrackedDownloadState = failed ? 'failedPending' : item.status === 'completed' ? 'importPending' : 'downloading';
-      const status: TrackedDownloadStatus = failed ? 'error' : item.status === 'warning' || !match ? 'warning' : 'ok';
+      let state: TrackedDownloadState = failed ? 'failedPending' : item.status === 'completed' ? 'importPending' : 'downloading';
+      let status: TrackedDownloadStatus = failed ? 'error' : item.status === 'warning' || !match ? 'warning' : 'ok';
       const statusMessages: QueueResource['statusMessages'] = [];
       if (!match) statusMessages.push({ title: item.title, messages: ['Unknown series: the download is not linked to a grabbed release'] });
       if (item.message && item.status === 'warning') statusMessages.push({ title: item.title, messages: [item.message] });
+      if (match) {
+        const grabbedId = match.rows[0]!.downloadId ?? item.downloadId;
+        if (failed && downloadEvents(this.app.db, grabbedId, 'downloadFailed').length > 0) state = 'failed';
+        else if (isFullyImported(this.app.db, grabbedId, match.episodeIds)) state = 'imported';
+        else if (state === 'importPending' && this.importing.has(item.downloadId.toLowerCase())) state = 'importing';
+        const outcome = this.outcomes.get(key);
+        if (state === 'importPending' && outcome?.status) {
+          status = outcome.status;
+          statusMessages.push(...(outcome.statusMessages ?? []));
+        }
+      }
       const quality = match?.quality ?? parseTitle(item.title)?.quality ?? UNKNOWN_QUALITY;
       const resource: QueueResource = {
         id,
@@ -252,8 +339,8 @@ export class QueueService {
     const sortKey = opts.sortKey ?? 'timeleft';
     const sortDirection = opts.sortDirection ?? 'ascending';
     const visible = this.tracked.filter((t) => opts.includeUnknownSeriesItems || t.match);
-    const progress = (t: Tracked) => (t.item.totalSize > 0 ? (t.item.totalSize - t.item.remainingSize) / t.item.totalSize : 0);
-    const value = (t: Tracked): number | string =>
+    const progress = (t: TrackedDownload) => (t.item.totalSize > 0 ? (t.item.totalSize - t.item.remainingSize) / t.item.totalSize : 0);
+    const value = (t: TrackedDownload): number | string =>
       sortKey === 'title'
         ? t.item.title.toLowerCase()
         : sortKey === 'series'
@@ -332,13 +419,10 @@ export class QueueService {
         });
       }
       this.tracked = this.tracked.filter((x) => x.id !== t.id);
-      const entry = this.itemsByClient.get(t.clientId);
-      if (entry) entry.items = entry.items.filter((i) => i.downloadId !== t.item.downloadId);
+      this.forget(t);
       this.app.events.publish('queue', 'deleted', { id: t.id } as unknown as Record<string, unknown>);
     }
-    this.signature = JSON.stringify(
-      this.tracked.map((t) => [t.id, t.item.status, t.item.remainingSize, t.resource.trackedDownloadState]),
-    );
+    this.signature = this.signatureOf();
   }
 }
 
@@ -352,6 +436,7 @@ export function registerQueue(app: FastifyInstance): QueueService {
   services.set(app.events, service);
   app.commands.register('RefreshMonitoredDownloads', async ({ updateMessage }) => {
     await service.refresh();
+    await service.processDownloads();
     const problems = service.health();
     updateMessage(problems.length > 0 ? problems.map((p) => p.message).join('; ') : 'Download clients refreshed');
   });

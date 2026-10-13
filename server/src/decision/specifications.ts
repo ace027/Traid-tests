@@ -1,4 +1,4 @@
-import { QUALITIES } from '@sonarr/shared';
+import { QUALITIES, type TrackedDownloadState } from '@sonarr/shared';
 import type { QualityModel } from '../parser/index.js';
 import { compareQuality, isRevisionUpgrade, qualityWeight } from './prioritize.js';
 import { rejection, type EpisodeRow, type Rejection, type RemoteEpisode, type SearchContext, type SeriesRow } from './types.js';
@@ -22,8 +22,8 @@ export interface SpecInput {
   existingFiles: QualityModel[];
   /** Non-special episodes of the release's season (full season packs only). */
   seasonEpisodes: EpisodeRow[];
-  /** Qualities of queue items that share an episode with the release. */
-  queued: QualityModel[];
+  /** Qualities of queue items that share an episode with the release, with the item state when known. */
+  queued: QueuedQuality[];
   /** Qualities grabbed within RECENT_GRAB_HOURS for the release's episodes. */
   recentGrabs: QualityModel[];
   blocklisted: boolean;
@@ -31,7 +31,12 @@ export interface SpecInput {
   minimumSeeders?: number;
 }
 
+export type QueuedQuality = QualityModel & { trackedDownloadState?: TrackedDownloadState };
+
 export type Specification = (input: SpecInput) => Rejection | null;
+
+/** Queue items in these states no longer block a release: they failed or are already imported. */
+export const INACTIVE_QUEUE_STATES: ReadonlySet<TrackedDownloadState> = new Set(['failed', 'failedPending', 'imported']);
 
 export const RECENT_GRAB_HOURS = 12;
 const MB = 1024 * 1024;
@@ -129,6 +134,7 @@ export const upgradeDisk: Specification = ({ quality, profile, existingFiles }) 
 
 export const queue: Specification = ({ quality, profile, queued }) => {
   for (const q of queued) {
+    if (q.trackedDownloadState && INACTIVE_QUEUE_STATES.has(q.trackedDownloadState)) continue;
     const name = qualityName(q.quality.id);
     if (meetsCutoff(q, profile) && !isRevisionUpgrade(quality, q)) {
       return rejection(`Release in queue already meets cutoff: ${name}`, 'temporary');

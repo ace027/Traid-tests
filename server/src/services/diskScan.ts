@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { monitorEpisodes, type MonitorOption } from '@sonarr/shared';
 import { schema } from '../db/index.js';
 import { parseQuality, parseTitle, type ParsedEpisodeInfo } from '../parser/index.js';
+import { upsertEpisodeFile, unlinkEpisodeFile } from './episodeFiles.js';
 import { isInside, realRootFolders } from './paths.js';
 
 export const VIDEO_EXTENSIONS = new Set([
@@ -252,51 +253,23 @@ export async function scanSeries(app: FastifyInstance, seriesId: number): Promis
   const epById = new Map(episodes.map((e) => [e.id, e]));
   const now = new Date();
   const nowIso = now.toISOString();
-  const existingByPath = new Map(existingFiles.map((f) => [f.path, f]));
   const acceptedPaths = new Set(accepted.map((c) => c.file));
 
   db.transaction((tx) => {
     for (const c of accepted) {
-      const season = epById.get(c.episodeIds[0]!)!.seasonNumber;
-      const quality = JSON.stringify(c.parsed.quality);
-      const values = {
+      const r = upsertEpisodeFile(tx, {
         seriesId,
-        seasonNumber: season,
-        relativePath: rel(c.file),
+        seasonNumber: epById.get(c.episodeIds[0]!)!.seasonNumber,
         path: c.file,
+        relativePath: rel(c.file),
         size: c.size,
-        quality,
+        quality: c.parsed.quality,
         releaseGroup: c.parsed.releaseGroup ?? null,
-      };
-      const cur = existingByPath.get(c.file);
-      let fileId: number;
-      if (cur) {
-        fileId = cur.id;
-        const changed =
-          cur.seasonNumber !== values.seasonNumber ||
-          cur.relativePath !== values.relativePath ||
-          cur.size !== values.size ||
-          cur.quality !== values.quality ||
-          cur.releaseGroup !== values.releaseGroup;
-        if (changed) {
-          tx.update(schema.episodeFiles).set(values).where(eq(schema.episodeFiles.id, cur.id)).run();
-          result.updated++;
-        }
-      } else {
-        // path is unique across series: take over a stale row of another series
-        tx.delete(schema.episodeFiles).where(eq(schema.episodeFiles.path, c.file)).run();
-        fileId = tx.insert(schema.episodeFiles).values({ ...values, dateAdded: nowIso }).returning().get().id;
-        result.added++;
-      }
-      const want = new Set(c.episodeIds);
-      for (const e of tx.select().from(schema.episodes).where(eq(schema.episodes.episodeFileId, fileId)).all()) {
-        if (!want.has(e.id)) tx.update(schema.episodes).set({ episodeFileId: null }).where(eq(schema.episodes.id, e.id)).run();
-      }
-      for (const id of c.episodeIds) {
-        if (epById.get(id)!.episodeFileId !== fileId) {
-          tx.update(schema.episodes).set({ episodeFileId: fileId }).where(eq(schema.episodes.id, id)).run();
-        }
-      }
+        episodeIds: c.episodeIds,
+        dateAdded: nowIso,
+      });
+      if (r.added) result.added++;
+      else if (r.updated) result.updated++;
     }
     // rows that were not accepted this scan: gone from disk, or now unparsed/duplicate
     for (const f of existingFiles) {
@@ -304,8 +277,7 @@ export async function scanSeries(app: FastifyInstance, seriesId: number): Promis
       if (result.truncated && !fileMissing(f.path)) continue;
       // unreadable subtree or failed stat: state unknown, never drop the row
       if (statFailed.has(f.path) || unreadableDirs.some((d) => f.path.startsWith(d + path.sep))) continue;
-      tx.update(schema.episodes).set({ episodeFileId: null }).where(eq(schema.episodes.episodeFileId, f.id)).run();
-      tx.delete(schema.episodeFiles).where(eq(schema.episodeFiles.id, f.id)).run();
+      unlinkEpisodeFile(tx, f.id);
       result.removed++;
     }
 

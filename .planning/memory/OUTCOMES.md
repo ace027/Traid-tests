@@ -39,3 +39,4 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-030 | 2026-10-13 | Sonarr-replica | 3 | 03-00 | engineering-senior-developer | quality-review | success | 4 | review, engineering | Phase 3 review PASSED in 2 cycle(s), 5 finding(s) |
 | O-031 | 2026-10-13 | Sonarr-replica | 3 | 03-00 | engineering-frontend-developer | quality-review | success | 4 | review, engineering | Phase 3 review PASSED in 2 cycle(s), 5 finding(s) |
 | O-032 | 2026-10-13 | Sonarr-replica | 4 | 04-01 | engineering-backend-architect | implementation | success | 2 | import-activity-wanted-and-calendar, engineering | Phase 4 foundations: settings, naming engine and shared types: Complete |
+| O-033 | 2026-10-13 | Sonarr-replica | 4 | 04-02 | engineering-senior-developer | implementation | partial | 3 | import-activity-wanted-and-calendar, engineering | Import pipeline, completed and failed download handling, manual import and rename: Complete with Warnings |
