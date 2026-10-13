@@ -14,7 +14,7 @@ export const eventQueryKeys: Record<string, readonly QueryKey[]> = {
   tag: [queryKeys.tags],
   qualitydefinition: [queryKeys.qualityDefinitions],
   qualityprofile: [queryKeys.qualityProfiles],
-  command: [queryKeys.commands],
+  command: [queryKeys.commands, queryKeys.tasks],
   hostconfig: [queryKeys.hostConfig, queryKeys.systemStatus],
   'config/host': [queryKeys.hostConfig, queryKeys.systemStatus],
   host: [queryKeys.hostConfig, queryKeys.systemStatus],
@@ -30,6 +30,9 @@ export const eventQueryKeys: Record<string, readonly QueryKey[]> = {
   queue: [queryKeys.queueAll],
   history: [queryKeys.historyAll],
   blocklist: [queryKeys.blocklistAll],
+  health: [queryKeys.health],
+  notification: [queryKeys.notifications],
+  backup: [queryKeys.backups],
 };
 
 export const RECONNECT_MIN_MS = 1000;
@@ -69,17 +72,61 @@ export function useConnectionStatus(): ConnectionStatus {
 
 // ---- event handling -------------------------------------------------------
 
-/** Invalidates the queries matching a server event. Returns true when it was handled. */
+/**
+ * Invalidations are debounced per query key: the first event invalidates at once, further events
+ * for the same key within this window collapse into one trailing invalidation.
+ */
+export const INVALIDATE_DEBOUNCE_MS = 250;
+
+interface Pending {
+  timer: ReturnType<typeof setTimeout>;
+  trailing: boolean;
+}
+const pending = new WeakMap<QueryClient, Map<string, Pending>>();
+
+function invalidateDebounced(queryClient: QueryClient, queryKey: QueryKey) {
+  let states = pending.get(queryClient);
+  if (!states) {
+    states = new Map();
+    pending.set(queryClient, states);
+  }
+  const id = JSON.stringify(queryKey);
+  const existing = states.get(id);
+  if (existing) {
+    existing.trailing = true;
+    return;
+  }
+  void queryClient.invalidateQueries({ queryKey });
+  const map = states;
+  const state: Pending = {
+    trailing: false,
+    timer: setTimeout(() => {
+      map.delete(id);
+      if (state.trailing) void queryClient.invalidateQueries({ queryKey });
+    }, INVALIDATE_DEBOUNCE_MS),
+  };
+  map.set(id, state);
+}
+
+/** Cancels invalidations that are still waiting for their debounce timer. */
+function cancelPending(queryClient: QueryClient) {
+  const timers = pending.get(queryClient);
+  if (!timers) return;
+  for (const { timer } of timers.values()) clearTimeout(timer);
+  timers.clear();
+}
+
+/** Invalidates (debounced per query key) the queries matching a server event. Returns true when it was handled. */
 export function handleServerEvent(queryClient: QueryClient, event: Pick<ServerEvent, 'name'>): boolean {
   const keys = eventQueryKeys[event.name?.toLowerCase?.() ?? ''];
   if (!keys) return false;
-  for (const queryKey of keys) void queryClient.invalidateQueries({ queryKey });
+  for (const queryKey of keys) invalidateDebounced(queryClient, queryKey);
   return true;
 }
 
 function invalidateAll(queryClient: QueryClient) {
   const unique = new Set(Object.values(eventQueryKeys).flat());
-  for (const queryKey of unique) void queryClient.invalidateQueries({ queryKey });
+  for (const queryKey of unique) invalidateDebounced(queryClient, queryKey);
 }
 
 /**
@@ -168,6 +215,7 @@ export function startEventStream(queryClient: QueryClient): () => void {
 
   return () => {
     stopped = true;
+    cancelPending(queryClient);
     clearTimeout(timer);
     source?.close();
     source = null;

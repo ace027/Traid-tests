@@ -262,4 +262,13 @@ export const queryKeys = {
   wantedCutoff: (params: Record<string, QueryValue>) => ['wanted', 'cutoff', params] as const,
   calendarAll: ['calendar'] as const,
   calendar: (params: Record<string, QueryValue>) => ['calendar', params] as const,
+  health: ['health'] as const,
+  diskSpace: ['diskspace'] as const,
+  tasks: ['system', 'task'] as const,
+  logs: (params: Record<string, QueryValue>) => ['log', params] as const,
+  logFiles: ['log', 'file'] as const,
+  backups: ['backup'] as const,
+  updates: ['update'] as const,
+  notifications: ['notification'] as const,
+  notificationSchema: ['notification', 'schema'] as const,
 } as const;

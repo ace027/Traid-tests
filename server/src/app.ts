@@ -25,6 +25,12 @@ import { wantedRoutes } from './routes/wanted.js';
 import { calendarRoutes } from './routes/calendar.js';
 import { manualImportRoutes } from './routes/manualimport.js';
 import { renameRoutes } from './routes/rename.js';
+import { systemExtraRoutes } from './routes/systemExtra.js';
+import { notificationRoutes } from './routes/notification.js';
+import { backupRoutes } from './routes/backup.js';
+import { staticUi } from './plugins/staticUi.js';
+import { LogService, createPinoStream } from './services/logs.js';
+import { HealthService, registerHealth, type StatFsFn } from './services/health.js';
 import { AuthService } from './services/auth.js';
 import { Scheduler, DEFAULT_TASKS } from './services/scheduler.js';
 import { CommandQueue } from './services/commands.js';
@@ -49,6 +55,8 @@ declare module 'fastify' {
     scheduler: Scheduler;
     auth: AuthService;
     metadata: MetadataProvider;
+    logs: LogService;
+    health: HealthService;
     /** Applies an update to the host config, persists it, refreshes the auth cache and publishes an event. */
     updateHostConfig: (update: (host: HostConfig) => HostConfig) => HostConfig;
   }
@@ -60,6 +68,10 @@ export interface BuildAppOptions {
   metadataProvider?: MetadataProvider;
   /** Starts the periodic task timer (default true). Tests disable it and call tick() directly. */
   scheduler?: boolean;
+  /** Directory with the built UI (default web/dist next to the server package). Tests point it at a temp dir. */
+  webDist?: string;
+  /** Replaces fs.statfs in the health checks and the disk space API (tests). */
+  statfs?: StatFsFn;
 }
 
 export { ensureHostConfig, getHostConfig };
@@ -88,15 +100,19 @@ export function redactUrl(url: unknown): unknown {
 
 const isPing = (url: string) => url === '/ping' || url.startsWith('/ping?');
 
-export async function buildApp({ dataDir, logger = false, metadataProvider, scheduler: runScheduler = true }: BuildAppOptions): Promise<FastifyInstance> {
+export async function buildApp({ dataDir, logger = false, metadataProvider, scheduler: runScheduler = true, webDist, statfs }: BuildAppOptions): Promise<FastifyInstance> {
   const dir = resolveDataDir(dataDir);
   const startTime = new Date().toISOString();
   const { sqlite, db } = openDb(dir);
   // The URL base is read once at build time; changing it needs a restart.
-  const urlBase = ensureHostConfig(db).urlBase;
+  const hostConfig = ensureHostConfig(db);
+  const urlBase = hostConfig.urlBase;
+  const logs = new LogService(dir);
   const app = Fastify({
     logger: logger
       ? {
+          level: hostConfig.logLevel,
+          stream: createPinoStream(logs, process.stdout),
           serializers: {
             req: (req) => ({
               method: req.method,
@@ -119,6 +135,7 @@ export async function buildApp({ dataDir, logger = false, metadataProvider, sche
   app.decorate('db', db);
   app.decorate('sqlite', sqlite);
   app.decorate('dataDir', dir);
+  app.decorate('logs', logs);
   app.decorate('metadata', metadataProvider ?? new TvMazeProvider());
   seed(db);
 
@@ -143,6 +160,7 @@ export async function buildApp({ dataDir, logger = false, metadataProvider, sche
 
   const auth = new AuthService(db);
   app.decorate('auth', auth);
+  registerHealth(app, statfs ? { statfs } : {});
   app.decorate('updateHostConfig', (update: (host: HostConfig) => HostConfig): HostConfig => {
     const next: HostConfig = { ...update(getHostConfig(db)), id: 1, password: '' };
     saveHostConfig(db, next);
@@ -207,6 +225,11 @@ export async function buildApp({ dataDir, logger = false, metadataProvider, sche
   await app.register(calendarRoutes);
   await app.register(manualImportRoutes);
   await app.register(renameRoutes);
+  await app.register(systemExtraRoutes);
+  await app.register(notificationRoutes);
+  await app.register(backupRoutes);
+  // Last, so the SPA fallback never shadows an API route.
+  await app.register(staticUi, { urlBase, ...(webDist !== undefined ? { webDist } : {}) });
 
   commands.start();
   if (runScheduler) scheduler.start();

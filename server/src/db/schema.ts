@@ -242,3 +242,22 @@ export const scheduledTasks = sqliteTable('scheduled_tasks', {
   lastStartTime: text('last_start_time'),
   nextExecution: text('next_execution').notNull(),
 });
+
+export const notifications = sqliteTable('notifications', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  implementation: text('implementation').notNull(),
+  onGrab: integer('on_grab', { mode: 'boolean' }).notNull().default(false),
+  onDownload: integer('on_download', { mode: 'boolean' }).notNull().default(false),
+  onUpgrade: integer('on_upgrade', { mode: 'boolean' }).notNull().default(false),
+  onRename: integer('on_rename', { mode: 'boolean' }).notNull().default(false),
+  onSeriesAdd: integer('on_series_add', { mode: 'boolean' }).notNull().default(false),
+  onSeriesDelete: integer('on_series_delete', { mode: 'boolean' }).notNull().default(false),
+  onEpisodeFileDelete: integer('on_episode_file_delete', { mode: 'boolean' }).notNull().default(false),
+  onEpisodeFileDeleteForUpgrade: integer('on_episode_file_delete_for_upgrade', { mode: 'boolean' }).notNull().default(false),
+  onHealthIssue: integer('on_health_issue', { mode: 'boolean' }).notNull().default(false),
+  onHealthRestored: integer('on_health_restored', { mode: 'boolean' }).notNull().default(false),
+  includeHealthWarnings: integer('include_health_warnings', { mode: 'boolean' }).notNull().default(false),
+  tags: text('tags').notNull().default('[]'),
+  settings: text('settings').notNull().default('{}'),
+});

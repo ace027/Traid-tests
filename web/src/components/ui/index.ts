@@ -12,3 +12,4 @@ export { Spinner, type SpinnerProps } from './Spinner';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { PageHeader, type PageHeaderProps } from './PageHeader';
 export { ToastProvider, useToast, TOAST_DURATION_MS, type ToastApi, type ToastKind } from './Toast';
+export { StatusBadge, type StatusBadgeProps, type StatusKind } from './StatusBadge';

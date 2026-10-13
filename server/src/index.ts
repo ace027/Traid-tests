@@ -11,6 +11,9 @@ const listen = resolveListenOptions(host);
 try {
   await app.listen(listen);
   app.log.info(`Sonarr listening on http://${listen.host}:${listen.port}${host.urlBase}`);
+  // Health is recomputed every 5 minutes and once now.
+  app.scheduler.ensureTask('CheckHealth', 'CheckHealth', 5);
+  void app.health.check().catch((err) => app.log.warn(err, 'Initial health check failed'));
 } catch (err) {
   app.log.error(err, 'Failed to start the server');
   await app.close().catch(() => {});

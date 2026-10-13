@@ -27,6 +27,13 @@ import { SeriesIndex } from './pages/series/SeriesIndex';
 import { AddNew } from './pages/series/AddNew';
 import { LibraryImport } from './pages/series/LibraryImport';
 import { SeriesDetail } from './pages/series/SeriesDetail';
+import { Connect } from './pages/settings/Connect';
+import { Status } from './pages/system/Status';
+import { Tasks } from './pages/system/Tasks';
+import { Backup } from './pages/system/Backup';
+import { Updates } from './pages/system/Updates';
+import { Events } from './pages/system/Events';
+import { LogFiles } from './pages/system/LogFiles';
 
 /**
  * Series and settings pages fetch with TanStack Query. App provides the shared client; this
@@ -43,7 +50,7 @@ const withQuery = (page: ReactNode) => <EnsureQueryClient>{page}</EnsureQueryCli
 const placeholder = (title: string) => <Placeholder title={title} />;
 
 /**
- * Children of /settings. Import lists, connect and metadata stay placeholders;
+ * Children of /settings. Import lists and metadata stay placeholders;
  * paths are relative to /settings ('index' is the overview).
  */
 export const settingsRoutes: RouteObject[] = [
@@ -54,7 +61,7 @@ export const settingsRoutes: RouteObject[] = [
   { path: 'indexers', element: withQuery(<Indexers />) },
   { path: 'downloadclients', element: withQuery(<DownloadClients />) },
   { path: 'importlists', element: placeholder('Import Lists') },
-  { path: 'connect', element: placeholder('Connect') },
+  { path: 'connect', element: withQuery(<Connect />) },
   { path: 'metadata', element: placeholder('Metadata') },
   { path: 'tags', element: withQuery(<Tags />) },
   { path: 'general', element: withQuery(<General />) },
@@ -72,6 +79,12 @@ const pages: Record<string, ReactNode> = {
   '/activity/blocklist': withQuery(<Blocklist />),
   '/wanted/missing': withQuery(<Missing />),
   '/wanted/cutoffunmet': withQuery(<CutoffUnmet />),
+  '/system/status': withQuery(<Status />),
+  '/system/tasks': withQuery(<Tasks />),
+  '/system/backup': withQuery(<Backup />),
+  '/system/updates': withQuery(<Updates />),
+  '/system/events': withQuery(<Events />),
+  '/system/logs/files': withQuery(<LogFiles />),
 };
 
 /** Series routes that are not in the navigation. */
