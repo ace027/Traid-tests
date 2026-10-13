@@ -1,8 +1,8 @@
 # Project State
 
 ## Current Position
-- **Phase**: 4 of 5 (executing)
-- **Status**: Phase 4 executing — Plan 04-05 complete
+- **Phase**: 4 of 5 (executed, pending review)
+- **Status**: Phase 4 complete — all plans executed successfully
 - **Last Activity**: Plan 04-05 execution (2026-10-13)
 
 ## Progress
@@ -20,7 +20,7 @@
 - Assumed: SSE for realtime events instead of SignalR
 
 ## Next Action
-Run `/triad:build` to execute Phase 4: Import, Activity, Wanted and Calendar
+Run `/triad:review` to verify Phase 4: Import, Activity, Wanted and Calendar
 
 ## Phase 1 Results
 (build started 2026-10-12)
