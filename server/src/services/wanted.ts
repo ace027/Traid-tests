@@ -1,9 +1,8 @@
 import { and, asc, desc, eq, isNotNull, isNull, or, sql, type SQL } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import type { Paged, Series, WantedRecord } from '@sonarr/shared';
+import { QUALITIES, type Paged, type Series, type WantedRecord } from '@sonarr/shared';
 import { schema } from '../db/index.js';
 import { qualityWeight } from '../decision/prioritize.js';
-import type { QualityModel } from '../parser/index.js';
 import { toApiEpisode } from './episodes.js';
 import { getSeries } from './series.js';
 
@@ -79,30 +78,41 @@ export function listMissing(app: FastifyInstance, opts: WantedOptions, now = new
   return paged(opts, total, toRecords(app, rows, opts.includeSeries ?? true));
 }
 
+/** SQL equivalent of qualityWeight() for a quality id expression (unknown ids weigh 0). */
+function weightExpr(idExpr: SQL): SQL {
+  const whens = QUALITIES.map((q) => sql`when ${q.id} then ${qualityWeight(q.id)}`);
+  return sql`(case ${idExpr} ${sql.join(whens, sql` `)} else 0 end)`;
+}
+
 /** Episodes with a file whose quality weighs less than the series profile cutoff. */
 export function listCutoffUnmet(app: FastifyInstance, opts: WantedOptions): Paged<WantedRecord> {
-  const cutoffs = new Map(app.db.select().from(schema.qualityProfiles).all().map((p) => [p.id, qualityWeight(p.cutoff)]));
-  const candidates = app.db
-    .select({ id: schema.episodes.id, profileId: schema.series.qualityProfileId, quality: schema.episodeFiles.quality })
-    .from(schema.episodes)
-    .innerJoin(schema.series, eq(schema.series.id, schema.episodes.seriesId))
-    .innerJoin(schema.episodeFiles, eq(schema.episodeFiles.id, schema.episodes.episodeFileId))
-    .where(and(isNotNull(schema.episodes.episodeFileId), monitoredCond(opts.monitored ?? true)))
-    .all()
-    .filter((r) => qualityWeight((JSON.parse(r.quality) as QualityModel).quality.id) < (cutoffs.get(r.profileId) ?? 0))
-    .map((r) => r.id);
-  if (candidates.length === 0) return paged(opts, 0, []);
-  // Ids come from the database, so inlining them is safe; sorted and paged in SQL.
-  const idList = sql.join(candidates.map((id) => sql`${id}`), sql`, `);
+  const fileWeight = weightExpr(sql`json_extract(${schema.episodeFiles.quality}, '$.quality.id')`);
+  const cutoffWeight = weightExpr(sql`${schema.qualityProfiles.cutoff}`);
+  const where = and(
+    isNotNull(schema.episodes.episodeFileId),
+    monitoredCond(opts.monitored ?? true),
+    sql`${fileWeight} < ${cutoffWeight}`,
+  );
+  const total =
+    app.db
+      .select({ n: sql<number>`count(*)` })
+      .from(schema.episodes)
+      .innerJoin(schema.series, eq(schema.series.id, schema.episodes.seriesId))
+      .innerJoin(schema.episodeFiles, eq(schema.episodeFiles.id, schema.episodes.episodeFileId))
+      .innerJoin(schema.qualityProfiles, eq(schema.qualityProfiles.id, schema.series.qualityProfileId))
+      .where(where)
+      .get()?.n ?? 0;
   const rows = app.db
     .select({ e: schema.episodes })
     .from(schema.episodes)
     .innerJoin(schema.series, eq(schema.series.id, schema.episodes.seriesId))
-    .where(sql`${schema.episodes.id} in (${idList})`)
+    .innerJoin(schema.episodeFiles, eq(schema.episodeFiles.id, schema.episodes.episodeFileId))
+    .innerJoin(schema.qualityProfiles, eq(schema.qualityProfiles.id, schema.series.qualityProfileId))
+    .where(where)
     .orderBy(...orderBy(opts))
     .limit(opts.pageSize)
     .offset((opts.page - 1) * opts.pageSize)
     .all()
     .map((r) => r.e);
-  return paged(opts, candidates.length, toRecords(app, rows, opts.includeSeries ?? true));
+  return paged(opts, total, toRecords(app, rows, opts.includeSeries ?? true));
 }

@@ -116,19 +116,27 @@ async function importOne(app: FastifyInstance, decision: ImportDecision, opts: I
 
   let importedPath: string;
   try {
-    // an old file holding the exact destination name must go first; the others only after a successful transfer
-    for (const f of oldFiles.filter((o) => o.path === dest)) await replaceOldFile(app, series, f, media);
+    // transfer first (an occupied destination gets a " (n)" suffix) so a failed transfer never costs the old file
     importedPath = await transferFile(source, dest, opts.mode);
   } catch (err) {
     app.log.warn({ err, source }, 'Import failed');
     return { decision, result: 'failed', message: `Failed to import ${path.basename(source)}: ${errorMessage(err)}` };
   }
-  for (const f of oldFiles.filter((o) => o.path !== dest)) {
+  for (const f of oldFiles) {
     try {
       await replaceOldFile(app, series, f, media);
     } catch (err) {
       app.log.warn({ err, path: f.path }, 'Unable to remove the replaced episode file');
       unlinkEpisodeFile(db, f.id);
+    }
+  }
+  // the old file held the exact destination name: move the new file into its place
+  if (importedPath !== dest && oldFiles.some((o) => o.path === dest) && !fs.existsSync(dest)) {
+    try {
+      await fs.promises.rename(importedPath, dest);
+      importedPath = dest;
+    } catch (err) {
+      app.log.warn({ err, importedPath }, 'Unable to move the imported file to its destination name');
     }
   }
 

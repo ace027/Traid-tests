@@ -90,37 +90,41 @@ export async function manualImportRoutes(app: FastifyInstance): Promise<void> {
 
     for (const file of files) {
       const name = path.basename(file.path);
-      const known = QUALITIES.find((x) => x.id === file.quality.quality.id);
-      if (!known) {
-        lines.push(`${name}: unknown quality`);
-        continue;
-      }
-      if (!path.isAbsolute(file.path) || !fs.statSync(file.path, { throwIfNoEntry: false })?.isFile()) {
-        lines.push(`${file.path}: file not found`);
-        continue;
-      }
-      const quality: QualityModel = { quality: known, revision: file.quality.revision };
-      const opts: Parameters<typeof getImportDecisions>[2] = { seriesId: file.seriesId, episodeIds: file.episodeIds, quality };
-      if (file.releaseGroup) opts.releaseGroup = file.releaseGroup;
-      if (file.downloadId) opts.downloadId = file.downloadId;
-      const tracked = file.downloadId ? await queue.findByDownloadId(file.downloadId) : undefined;
-      const mode: TransferMode = importMode !== 'auto' ? importMode : tracked ? transferModeFor(app.db, tracked) : 'move';
+      try {
+        const known = QUALITIES.find((x) => x.id === file.quality.quality.id);
+        if (!known) {
+          lines.push(`${name}: unknown quality`);
+          continue;
+        }
+        if (!path.isAbsolute(file.path) || !fs.statSync(file.path, { throwIfNoEntry: false })?.isFile()) {
+          lines.push(`${file.path}: file not found`);
+          continue;
+        }
+        const quality: QualityModel = { quality: known, revision: file.quality.revision };
+        const opts: Parameters<typeof getImportDecisions>[2] = { seriesId: file.seriesId, episodeIds: file.episodeIds, quality };
+        if (file.releaseGroup) opts.releaseGroup = file.releaseGroup;
+        if (file.downloadId) opts.downloadId = file.downloadId;
+        const tracked = file.downloadId ? await queue.findByDownloadId(file.downloadId) : undefined;
+        const mode: TransferMode = importMode !== 'auto' ? importMode : tracked ? transferModeFor(app.db, tracked) : 'move';
 
-      const run = async (): Promise<ImportResult[]> => {
-        const decisions = await getImportDecisions(app, file.path, opts);
-        const importOpts: Parameters<typeof importDecisions>[2] = { mode };
-        if (file.downloadId) importOpts.downloadId = file.downloadId;
-        if (tracked) importOpts.downloadClient = tracked.clientName;
-        return importDecisions(app, decisions, importOpts);
-      };
-      const results = file.downloadId ? await queue.withImportGuard(file.downloadId, run) : await run();
-      if (!results) {
-        lines.push(`${name}: an import of this download is already running`);
-        continue;
-      }
-      for (const r of results) {
-        if (r.result === 'imported') imported++;
-        else lines.push(`${name}: ${r.message}`);
+        const run = async (): Promise<ImportResult[]> => {
+          const decisions = await getImportDecisions(app, file.path, opts);
+          const importOpts: Parameters<typeof importDecisions>[2] = { mode };
+          if (file.downloadId) importOpts.downloadId = file.downloadId;
+          if (tracked) importOpts.downloadClient = tracked.clientName;
+          return importDecisions(app, decisions, importOpts);
+        };
+        const results = file.downloadId ? await queue.withImportGuard(file.downloadId, run) : await run();
+        if (!results) {
+          lines.push(`${name}: an import of this download is already running`);
+          continue;
+        }
+        for (const r of results) {
+          if (r.result === 'imported') imported++;
+          else lines.push(`${name}: ${r.message}`);
+        }
+      } catch (err) {
+        lines.push(`${name}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
     updateMessage([`Imported ${imported} of ${files.length} files`, ...lines].join('\n'));
