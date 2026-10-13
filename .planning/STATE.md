@@ -2,8 +2,8 @@
 
 ## Current Position
 - **Phase**: 5 of 5 (executing)
-- **Status**: Phase 5 executing — Plan 05-04 complete
-- **Last Activity**: Plan 05-04 execution (2026-10-13)
+- **Status**: Phase 5 executing — Plan 05-06 failed
+- **Last Activity**: Plan 05-06 execution (2026-10-13)
 
 ## Progress
 ```
@@ -63,3 +63,4 @@ Run `/triad:build` to execute Phase 5: Connections, System and Polish
 - Plan 05-04 (Wave 2): System pages — PARTIAL: All six System pages, the system hooks and the sidebar health badge are built, along with 17 tests including axe checks. Web typecheck, the full web test suite (218 tests) and the web build all pass. 
 - Plan 05-05 (Wave 2): Connect settings and live command activity — Complete
 - Plan 05-04 (Wave 2): System pages — Complete
+- Plan 05-06 (Wave 3): End-to-end smoke tests with Playwright — PARTIAL: Playwright e2e is set up and `npx playwright test` exits 0 (24 passed, 2 skipped). The full desktop flow passes. On mobile, steps 5 and 7 are test.fixme because they fail at the second import in one s
