@@ -15,6 +15,7 @@ import {
 } from '@sonarr/shared';
 import { schema, type Db } from '../db/index.js';
 import { MetadataError, type ProviderEpisode } from './metadata/types.js';
+import { isInside, realpathLoose, realRootFolders } from './paths.js';
 
 type SeriesRow = typeof schema.series.$inferSelect;
 
@@ -144,35 +145,6 @@ export function getSeries(db: Db, id: number): Series | undefined {
   if (!row) return undefined;
   const seasons = db.select().from(schema.seasons).where(eq(schema.seasons.seriesId, id)).all();
   return toApiSeries(row, getSeriesStatistics(db, [id]).get(id), seasons);
-}
-
-function isInside(parent: string, child: string): boolean {
-  const rel = path.relative(parent, child);
-  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
-}
-
-/** realpath of the deepest existing ancestor of p, re-joined with the missing remainder. */
-function realpathLoose(p: string): string {
-  const rest: string[] = [];
-  let cur = path.resolve(p);
-  for (;;) {
-    try {
-      return path.join(fs.realpathSync(cur), ...rest.reverse());
-    } catch {
-      const parent = path.dirname(cur);
-      if (parent === cur) return path.resolve(p);
-      rest.push(path.basename(cur));
-      cur = parent;
-    }
-  }
-}
-
-function realRootFolders(db: Db): { path: string; real: string }[] {
-  return db
-    .select()
-    .from(schema.rootFolders)
-    .all()
-    .map((r) => ({ path: r.path, real: realpathLoose(r.path) }));
 }
 
 export function folderName(title: string, year: number): string {

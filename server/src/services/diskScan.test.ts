@@ -119,14 +119,33 @@ describe('disk scan', () => {
     expect(cmd.message).toContain('1 removed');
   });
 
-  it('unlinks missing files when the series folder is gone', async () => {
+  it('keeps file rows and fails when the series folder is gone or unmounted', async () => {
     const { series } = await setup();
     write(series.path, 'Show.S01E01.mkv');
     await rescan(series.id);
-    fs.rmSync(series.path, { recursive: true });
+    const moved = `${series.path}-moved`;
+    fs.renameSync(series.path, moved);
+    tmp.push(moved);
     const cmd = await rescan(series.id);
-    expect(cmd.status).toBe('completed');
-    expect(files(series.id)).toHaveLength(0);
+    expect(cmd.status).toBe('failed');
+    expect(cmd.message).toContain('not accessible');
+    expect(files(series.id)).toHaveLength(1);
+    expect(linked(series.id).filter((e) => e.f !== null)).toHaveLength(1);
+  });
+
+  it('keeps file rows when the series folder cannot be read', async () => {
+    const { series } = await setup();
+    write(series.path, 'Show.S01E01.mkv');
+    await rescan(series.id);
+    fs.chmodSync(series.path, 0o000);
+    try {
+      if (process.getuid?.() === 0) return; // root bypasses permissions
+      const cmd = await rescan(series.id);
+      expect(cmd.status).toBe('failed');
+      expect(files(series.id)).toHaveLength(1);
+    } finally {
+      fs.chmodSync(series.path, 0o755);
+    }
   });
 
   it('does not follow symlinks that leave the series folder, nor loops', async () => {

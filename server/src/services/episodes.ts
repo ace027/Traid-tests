@@ -1,9 +1,9 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { Episode, EpisodeFile, QualityModel } from '@sonarr/shared';
 import { schema } from '../db/index.js';
+import { isInside } from './paths.js';
 
 type EpisodeRow = typeof schema.episodes.$inferSelect;
 type FileRow = typeof schema.episodeFiles.$inferSelect;
@@ -43,11 +43,6 @@ export function toApiEpisodeFile(row: FileRow): EpisodeFile {
   return f;
 }
 
-function isStrictlyInside(parent: string, child: string): boolean {
-  const rel = path.relative(parent, child);
-  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
-}
-
 /**
  * Deletes an episode file row (unlinking its episodes) and removes the file from disk,
  * but only when its realpath is inside the series folder. A file that is already gone
@@ -64,7 +59,7 @@ export function deleteEpisodeFile(app: FastifyInstance, id: number): { deletedFr
     try {
       const realFile = fs.realpathSync(file.path);
       const realSeries = fs.realpathSync(series.path);
-      if (isStrictlyInside(realSeries, realFile)) {
+      if (isInside(realSeries, realFile)) {
         fs.unlinkSync(file.path);
         deletedFromDisk = true;
       }

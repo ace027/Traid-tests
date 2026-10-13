@@ -3,8 +3,9 @@ import path from 'node:path';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { monitorEpisodes, type MonitorOption } from '@sonarr/shared';
-import { schema, type Db } from '../db/index.js';
+import { schema } from '../db/index.js';
 import { parseQuality, parseTitle, type ParsedEpisodeInfo } from '../parser/index.js';
+import { isInside, realRootFolders } from './paths.js';
 
 export const VIDEO_EXTENSIONS = new Set([
   '.mkv', '.mp4', '.avi', '.m4v', '.wmv', '.ts', '.mov', '.webm', '.mpg', '.mpeg', '.m2ts',
@@ -19,31 +20,6 @@ export interface ScanResult {
   removed: number;
   unparsed: string[];
   truncated: boolean;
-}
-
-export function isInside(parent: string, child: string): boolean {
-  const rel = path.relative(parent, child);
-  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
-}
-
-/** realpath of the deepest existing ancestor of p, re-joined with the missing remainder. */
-export function realpathLoose(p: string): string {
-  const rest: string[] = [];
-  let cur = path.resolve(p);
-  for (;;) {
-    try {
-      return path.join(fs.realpathSync(cur), ...rest.reverse());
-    } catch {
-      const parent = path.dirname(cur);
-      if (parent === cur) return path.resolve(p);
-      rest.push(path.basename(cur));
-      cur = parent;
-    }
-  }
-}
-
-export function realRootFolders(db: Db): string[] {
-  return db.select().from(schema.rootFolders).all().map((r) => realpathLoose(r.path));
 }
 
 interface Candidate {
@@ -79,12 +55,14 @@ function parseFile(file: string): ParsedEpisodeInfo | { fallback: { season: numb
 interface WalkResult {
   files: string[];
   truncated: boolean;
+  rootUnreadable: boolean;
 }
 
 async function walk(base: string, realBase: string): Promise<WalkResult> {
   const files: string[] = [];
   let entries = 0;
   let truncated = false;
+  let rootUnreadable = false;
   const visited = new Set<string>([realBase]);
   const stack: { logical: string; real: string; depth: number }[] = [{ logical: base, real: realBase, depth: 0 }];
   while (stack.length && !truncated) {
@@ -93,6 +71,7 @@ async function walk(base: string, realBase: string): Promise<WalkResult> {
     try {
       handle = await fs.promises.opendir(dir.logical);
     } catch {
+      if (dir.depth === 0) rootUnreadable = true;
       continue;
     }
     try {
@@ -133,7 +112,7 @@ async function walk(base: string, realBase: string): Promise<WalkResult> {
     }
   }
   files.sort();
-  return { files, truncated };
+  return { files, truncated, rootUnreadable };
 }
 
 function fileMissing(p: string): boolean {
@@ -153,16 +132,6 @@ export async function scanSeries(app: FastifyInstance, seriesId: number): Promis
 
   const existingFiles = db.select().from(schema.episodeFiles).where(eq(schema.episodeFiles.seriesId, seriesId)).all();
 
-  const removeRows = (ids: number[]) => {
-    if (ids.length === 0) return;
-    db.transaction((tx) => {
-      for (const id of ids) {
-        tx.update(schema.episodes).set({ episodeFileId: null }).where(eq(schema.episodes.episodeFileId, id)).run();
-        tx.delete(schema.episodeFiles).where(eq(schema.episodeFiles.id, id)).run();
-      }
-    });
-    result.removed += ids.length;
-  };
   const publish = () => {
     if (result.added || result.updated || result.removed) {
       app.events.publish('episodefile', 'updated', { seriesId });
@@ -175,16 +144,19 @@ export async function scanSeries(app: FastifyInstance, seriesId: number): Promis
   try {
     realBase = fs.realpathSync(series.path);
   } catch {
-    // series folder does not exist: unlink every file row whose file is gone
-    removeRows(existingFiles.filter((f) => fileMissing(f.path)).map((f) => f.id));
+    // Missing folder (unmounted share, rename): never unlink anything, it may be transient.
+    if (existingFiles.length > 0) throw new Error(`Series folder is not accessible: ${series.path}`);
     publish();
     return result;
   }
-  if (!realRootFolders(db).some((r) => isInside(r, realBase))) {
+  if (!realRootFolders(db).some((r) => isInside(r.real, realBase))) {
     throw new Error('Series folder is outside root folders');
   }
 
-  const { files, truncated } = await walk(series.path, realBase);
+  const { files, truncated, rootUnreadable } = await walk(series.path, realBase);
+  if (rootUnreadable && existingFiles.length > 0) {
+    throw new Error(`Series folder could not be read: ${series.path}`);
+  }
   result.truncated = truncated;
 
   const episodes = db.select().from(schema.episodes).where(eq(schema.episodes.seriesId, seriesId)).all();

@@ -4,11 +4,7 @@ import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { rootFolderInputSchema, validationError, type RootFolder } from '@sonarr/shared';
 import { schema } from '../db/index.js';
-
-function isInside(parent: string, child: string): boolean {
-  const rel = path.relative(parent, child);
-  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
-}
+import { isInside } from '../services/paths.js';
 
 const SKIP_NAMES = new Set(['@eadir', '#recycle', '$recycle.bin', 'system volume information', 'lost+found']);
 const MAX_UNMAPPED = 5000;
