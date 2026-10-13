@@ -1,7 +1,7 @@
 ---
 phase: 03-indexers-search-and-download-clients
 compacted: 2026-10-13
-original_summaries: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-05-SUMMARY.md]
+original_summaries: [03-01-SUMMARY.md, 03-02-SUMMARY.md, 03-03-SUMMARY.md, 03-04-SUMMARY.md, 03-05-SUMMARY.md]
 requirements_satisfied: [REQ-09, REQ-10, REQ-11, REQ-08, REQ-03]
 ---
 
@@ -11,6 +11,7 @@ requirements_satisfied: [REQ-09, REQ-10, REQ-11, REQ-08, REQ-03]
 - 03-01 Phase 3 foundations: schema, shared types, scheduler, history and blocklist (Complete): server/src/app.test.ts, server/src/app.ts, server/src/db/migrations/0004_indexers_downloads.sql, server/src/db/schema.ts, server/src/routes/blocklist.ts, server/src/routes/downloadclient.ts, server/src/routes/history.test.ts, server/src/routes/history.ts, server/src/routes/indexer.ts, server/src/routes/system.ts, server/src/services/blocklist.ts, server/src/services/history.ts, server/src/services/scheduler.test.ts, server/src/services/scheduler.ts, server/src/test/helpers.ts, shared/src/index.ts, shared/src/indexers.ts
 - 03-02 Newznab and Torznab indexers (Complete): server/src/indexers/newznab.test.ts, server/src/indexers/newznab.ts, server/src/indexers/registry.ts, server/src/indexers/types.ts, server/src/indexers/xml.test.ts, server/src/indexers/xml.ts, server/src/routes/indexer.test.ts, server/src/routes/indexer.ts, server/src/test/fakeIndexer.ts
 - 03-03 Download clients and queue tracking (Complete): server/src/downloadClients/bencode.ts, server/src/downloadClients/clients.test.ts, server/src/downloadClients/nzbget.ts, server/src/downloadClients/qbittorrent.ts, server/src/downloadClients/registry.ts, server/src/downloadClients/sabnzbd.ts, server/src/downloadClients/transmission.ts, server/src/downloadClients/types.ts, server/src/routes/downloadclient.test.ts, server/src/routes/downloadclient.ts, server/src/services/queue.test.ts, server/src/services/queue.ts, server/src/test/fakeDownloadClient.ts
+- 03-04 Decision engine, search, RSS sync and grabbing (Complete): server/src/app.ts, server/src/decision/engine.test.ts, server/src/decision/engine.ts, server/src/decision/prioritize.ts, server/src/decision/specifications.ts, server/src/decision/types.ts, server/src/routes/release.test.ts, server/src/routes/release.ts, server/src/services/grab.ts, server/src/services/rss.ts, server/src/services/search.test.ts, server/src/services/search.ts
 - 03-05 Indexer, download client, queue and interactive search UI (Complete with Warnings): web/src/lib/api.ts, web/src/lib/events.ts, web/src/pages/activity/Queue.tsx, web/src/pages/activity/RemoveQueueItemModal.tsx, web/src/pages/activity/hooks.ts, web/src/pages/activity/queue.test.tsx, web/src/pages/series/InteractiveSearchModal.tsx, web/src/pages/series/SeasonSection.tsx, web/src/pages/series/SeriesDetail.tsx, web/src/pages/series/hooks.ts, web/src/pages/series/interactiveSearch.test.tsx, web/src/pages/settings/DownloadClientModal.tsx, web/src/pages/settings/DownloadClients.tsx, web/src/pages/settings/IndexerModal.tsx, web/src/pages/settings/Indexers.tsx, web/src/pages/settings/providers.test.tsx, web/src/routes.tsx
 
 ## Decisions
@@ -23,6 +24,7 @@ requirements_satisfied: [REQ-09, REQ-10, REQ-11, REQ-08, REQ-03]
 - 03-03: DB stores implementation lowercase and the API uses the capitalised form. Factories receive a ClientConfig {id, name, implementation, settings} where settings i
 - 03-03: clientFor(row) caches client instances per id and settings so qBittorrent cookies and Transmission session ids survive across polls. setDownloadClientFactory cl
 - 03-03: pickClient: clients sharing a tag with the series win. If none share one, untagged clients are used, and a tagged client is never used for an untagged series. L
+- 03-04: makeDecisions is async (Promise<DownloadDecision[]>) because the queue specification reads getQueue(app).details(), which can poll the download clients.
 - 03-05: There is no settings hooks file in my list, so indexer hooks and shared provider helpers live in settings/IndexerModal.tsx and client hooks in settings/Download
 
 ## Conventions and Open Questions
@@ -35,6 +37,7 @@ requirements_satisfied: [REQ-09, REQ-10, REQ-11, REQ-08, REQ-03]
 - 03-03 convention: registerQueue(app) returns the QueueService. getQueue(app) is an alias and QueueService.refresh() forces a poll.
 - 03-03 convention: Tests and the grab flow can use setDownloadClientFactory((cfg) => fake) with FakeDownloadClient, and FakeDownloadClient.item({downloadId, ...}) to build items.
 - 03-03 convention: The grab flow (03-04) calls pickClient(db, protocol, seriesTags), then clientFor(row).addRelease(release, torrentFile?). It should store the returned id as down
+- 03-04 convention: Phase 4 can call makeDecisions(app, releases, {interactive, now, searchCriteria?}) and then sortDecisions(), and grabRelease(app, decision, {interactive}) retur
 - 03-05 convention: queryKeys.queueAll ['queue'] is the prefix for all queue queries
 - 03-05 convention: invalidate it after grabs. 'queue' and 'history' server events refresh them.
 
@@ -80,6 +83,18 @@ requirements_satisfied: [REQ-09, REQ-10, REQ-11, REQ-08, REQ-03]
 | `server/src/services/queue.test.ts` | 03-03: Download clients and queue tracking |
 | `server/src/services/queue.ts` | 03-03: Download clients and queue tracking |
 | `server/src/test/fakeDownloadClient.ts` | 03-03: Download clients and queue tracking |
+| `server/src/app.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/decision/engine.test.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/decision/engine.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/decision/prioritize.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/decision/specifications.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/decision/types.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/routes/release.test.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/routes/release.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/services/grab.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/services/rss.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/services/search.test.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
+| `server/src/services/search.ts` | 03-04: Decision engine, search, RSS sync and grabbing |
 | `web/src/lib/api.ts` | 03-05: Indexer, download client, queue and interactive search UI |
 | `web/src/lib/events.ts` | 03-05: Indexer, download client, queue and interactive search UI |
 | `web/src/pages/activity/Queue.tsx` | 03-05: Indexer, download client, queue and interactive search UI |
@@ -102,10 +117,12 @@ requirements_satisfied: [REQ-09, REQ-10, REQ-11, REQ-08, REQ-03]
 - 03-01 (REQ-09, REQ-10, REQ-11): 6/6 verification commands passed
 - 03-02 (REQ-08): 5/5 verification commands passed
 - 03-03 (REQ-11): 6/6 verification commands passed
+- 03-04 (REQ-09, REQ-10): 5/5 verification commands passed
 - 03-05 (REQ-08, REQ-10, REQ-11, REQ-03): 6/6 verification commands passed
 
 ## Agents
 - 03-01: engineering-backend-architect
 - 03-02: engineering-backend-architect
 - 03-03: engineering-backend-architect
+- 03-04: engineering-senior-developer
 - 03-05: engineering-frontend-developer
