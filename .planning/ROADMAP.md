@@ -72,5 +72,5 @@
 | 1 | 4 | 4 | Complete |
 | 2 | 4 | 4 | Complete |
 | 3 | 5 | 5 | Complete |
-| 4 | 5 | 4 | Partial |
+| 4 | 5 | 5 | Executed |
 | 5 | 3 | 0 | Pending |
