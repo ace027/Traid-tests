@@ -73,4 +73,4 @@
 | 2 | 4 | 4 | Complete |
 | 3 | 5 | 5 | Complete |
 | 4 | 5 | 5 | Complete |
-| 5 | 6 | 6 | Complete |
+| 5 | 6 | 6 | Shipped |
