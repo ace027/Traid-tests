@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Position
-- **Phase**: 2 of 5 (planned)
-- **Status**: Phase 2 planned -- 4 plans across 2 waves
-- **Last Activity**: Phase 2 planning (2026-10-13)
+- **Phase**: 2 of 5 (executing)
+- **Status**: Phase 2 executing — Plan 02-02 complete
+- **Last Activity**: Plan 02-02 execution (2026-10-13)
 
 ## Progress
 ```
-[####................] 21% — 4/19 plans complete
+[#####...............] 26% — 5/19 plans complete
 ```
 
 ## Recent Decisions
@@ -28,3 +28,8 @@ Run `/triad:build` to execute Phase 2: Series Library
 - Plan 01-02 (Wave 2): Settings API, command queue and event stream — Complete
 - Plan 01-03 (Wave 2): Modern app shell and design system — Complete
 - Plan 01-04 (Wave 3): Settings pages — Complete
+
+## Phase 2 Results
+(build started 2026-10-13)
+- Plan 02-01 (Wave 1): Series data model, TVmaze provider and series API — PARTIAL: Schema, shared types and monitoring, TVmaze provider with fake, and the /api/v3/series service and routes are all done and tested. Two stale assertions in server/src/app.test.ts fail, and that file is
+- Plan 02-02 (Wave 1): Filename and release title parser — Complete
