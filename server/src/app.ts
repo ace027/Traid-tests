@@ -19,12 +19,16 @@ import { downloadClientRoutes } from './routes/downloadclient.js';
 import { tagRoutes } from './routes/tag.js';
 import { episodeRoutes } from './routes/episode.js';
 import { episodeFileRoutes } from './routes/episodefile.js';
+import { releaseRoutes } from './routes/release.js';
 import { AuthService } from './services/auth.js';
 import { Scheduler, DEFAULT_TASKS } from './services/scheduler.js';
 import { CommandQueue } from './services/commands.js';
 import { registerRescanCommand } from './services/diskScan.js';
 import { EventBus } from './services/events.js';
 import { registerRefreshCommand } from './services/refresh.js';
+import { registerQueue } from './services/queue.js';
+import { registerRssSync } from './services/rss.js';
+import { registerSearchCommands } from './services/search.js';
 import { ensureHostConfig, getHostConfig, saveHostConfig } from './services/hostConfig.js';
 import type { MetadataProvider } from './services/metadata/types.js';
 import { TvMazeProvider } from './services/metadata/tvmaze.js';
@@ -120,6 +124,9 @@ export async function buildApp({ dataDir, logger = false, metadataProvider, sche
   app.decorate('commands', commands);
   registerRefreshCommand(app);
   registerRescanCommand(app);
+  registerQueue(app);
+  registerSearchCommands(app);
+  registerRssSync(app);
   const scheduler = new Scheduler(app);
   app.decorate('scheduler', scheduler);
   for (const t of DEFAULT_TASKS) scheduler.ensureTask(t.name, t.commandName, t.intervalMinutes);
@@ -189,6 +196,7 @@ export async function buildApp({ dataDir, logger = false, metadataProvider, sche
   await app.register(blocklistRoutes);
   await app.register(indexerRoutes);
   await app.register(downloadClientRoutes);
+  await app.register(releaseRoutes);
 
   commands.start();
   if (runScheduler) scheduler.start();
