@@ -30,3 +30,4 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-021 | 2026-10-13 | Sonarr-replica | 2 | 02-00 | engineering-frontend-developer | quality-review | success | 4 | review, engineering | Phase 2 review PASSED in 4 cycle(s), 7 finding(s) |
 | O-022 | 2026-10-13 | Sonarr-replica | 2 | 02-00 | design-ux-architect | quality-review | success | 4 | review, design | Phase 2 review PASSED in 4 cycle(s), 7 finding(s) |
 | O-023 | 2026-10-13 | Sonarr-replica | 3 | 03-01 | engineering-backend-architect | implementation | success | 2 | indexers-search-and-download-clients, engineering | Phase 3 foundations: schema, shared types, scheduler, history and blocklist: Complete |
+| O-024 | 2026-10-13 | Sonarr-replica | 3 | 03-02 | engineering-backend-architect | implementation | success | 2 | indexers-search-and-download-clients, engineering | Newznab and Torznab indexers: Complete |
