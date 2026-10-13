@@ -1,13 +1,25 @@
 wave: A
 phase: 2
-status: failed
-timestamp: "2026-10-13T01:42:08Z"
+status: complete
+timestamp: "2026-10-13T01:47:21Z"
 service_groups:
   backend:
-    status: partial
+    status: complete
     plans: [02-01, 02-02, 02-03]
-    files: []
+    files: [server/src/app.test.ts, server/src/app.ts, server/src/routes/episode.test.ts, server/src/routes/episode.ts, server/src/routes/episodefile.ts, server/src/routes/rootfolder.test.ts, server/src/routes/rootfolder.ts, server/src/services/diskScan.test.ts, server/src/services/diskScan.ts, server/src/services/episodes.ts, server/src/services/refresh.test.ts, server/src/services/refresh.ts]
   frontend:
-    status: failed
+    status: complete
     plans: [02-04]
-    files: []
+    files: [web/src/components/layout/CommandPalette.tsx, web/src/lib/api.ts, web/src/lib/events.ts, web/src/pages/series/AddNew.tsx, web/src/pages/series/AddSeriesModal.tsx, web/src/pages/series/DeleteSeriesModal.tsx, web/src/pages/series/EditSeriesModal.tsx, web/src/pages/series/LibraryImport.tsx, web/src/pages/series/SeasonSection.tsx, web/src/pages/series/SeriesDetail.tsx, web/src/pages/series/SeriesIndex.tsx, web/src/pages/series/SeriesPoster.tsx, web/src/pages/series/fixtures.ts, web/src/pages/series/hooks.ts, web/src/pages/series/series.test.tsx, web/src/routes.tsx]
+analysis_findings:
+  count: 15
+  by_agent:
+    engineering-backend-architect: {blockers: 1, warnings: 7}
+    engineering-security-engineer: {blockers: 0, warnings: 7}
+outputs:
+  total_files: 28
+  total_plans: 4
+  passed: 4
+  failed: 0
+gate: architecture
+gate_status: passed
