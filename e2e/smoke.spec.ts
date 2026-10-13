@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { expect, test, type APIRequestContext, type BrowserContext, type Page } from '@playwright/test';
 import { AUX, api, apiKey, axeCheck, completeSetup, e2eInfo, isMobile, openNav, visit, type E2eInfo } from './helpers';
 
@@ -105,6 +106,18 @@ test.describe('smoke', () => {
 
   test('4. interactive search and grab', async ({}, testInfo) => {
     const show = showFor(isMobile(testInfo));
+    // A webhook subscribed to On Grab only, created before the grab so the grab must reach /e2e-hook.
+    type Template = { implementation: string; settings: Record<string, unknown> };
+    const schema = await api<Template[]>(request, await getKey(), 'notification/schema');
+    const webhook = schema.find((t) => t.implementation === 'Webhook');
+    expect(webhook, 'Webhook notification template').toBeTruthy();
+    await api(request, await getKey(), 'notification', {
+      ...webhook,
+      name: `E2E Grab Hook ${show.title}`,
+      onGrab: true,
+      settings: { ...webhook!.settings, url: `${AUX}/e2e-hook` },
+    });
+
     await visit(page, '/');
     await page.getByRole('link', { name: new RegExp(show.title) }).first().click();
     await expect(page.getByRole('heading', { name: show.season })).toBeVisible();
@@ -114,6 +127,16 @@ test.describe('smoke', () => {
     await dialog.getByRole('button', { name: /^Grab .*WEB-DL-E2E/ }).first().click();
     await expect(dialog.getByRole('button', { name: /^Grabbed / })).toBeVisible();
     await page.keyboard.press('Escape');
+
+    await expect
+      .poll(
+        async () => {
+          const hooks = (await (await request.get(`${AUX}/e2e-hook`)).json()) as ({ eventType?: string; series?: { title?: string } } | null)[];
+          return hooks.some((h) => h?.eventType === 'Grab' && h.series?.title === show.title);
+        },
+        { timeout: 10_000, message: 'On Grab webhook should receive a Grab payload for the grabbed series' },
+      )
+      .toBe(true);
   });
 
   test('5. queue shows the download, refreshes import it', async ({}, testInfo) => {
@@ -123,6 +146,8 @@ test.describe('smoke', () => {
     await visit(page, '/activity/queue');
     await expect(page.getByText(/WEB-DL-E2E/).first()).toBeVisible();
     await expect(page.getByRole('progressbar').first(), 'queue item progress bar').toBeVisible();
+    // Marks this document: a reload or navigation would drop it, so the checks below prove live updates.
+    await page.evaluate(() => ((window as unknown as { __live?: boolean }).__live = true));
 
     // Each refresh runs to completion before the next one starts, so imports never overlap.
     const refresh = async () => {
@@ -145,6 +170,11 @@ test.describe('smoke', () => {
       )
       .toBe('empty');
 
+    // Still on the same page with no reload: the row and its progress bar leave through live updates.
+    await expect(page.getByText(/WEB-DL-E2E/), 'queue row should disappear without a reload').toBeHidden({ timeout: 15_000 });
+    await expect(page.getByRole('progressbar')).toBeHidden();
+    expect(await page.evaluate(() => (window as unknown as { __live?: boolean }).__live), 'page must not have reloaded').toBe(true);
+
     await visit(page, '/activity/history');
     await expect(page.getByRole('table').getByText('Grabbed', { exact: true }).first()).toBeVisible();
     await expect(page.getByRole('table').getByText(/^(Imported|Episode Imported)$/).first()).toBeVisible();
@@ -157,14 +187,24 @@ test.describe('smoke', () => {
     await expect(page.locator('[data-health-level="error"]')).toHaveCount(0);
 
     await visit(page, '/system/tasks');
+    type Cmd = { id: number; name: string; status: string };
+    const housekeeping = async () => (await api<Cmd[]>(request, await getKey(), 'command')).filter((c) => c.name === 'Housekeeping');
+    const before = new Set((await housekeeping()).map((c) => c.id));
+    const completedRows = page.getByRole('table', { name: 'Command queue' }).getByRole('row').filter({ hasText: 'Housekeeping' }).filter({ hasText: 'Completed' });
+    const completedBefore = await completedRows.count();
+    await page.evaluate(() => ((window as unknown as { __live?: boolean }).__live = true));
+
     await page.getByRole('button', { name: 'Run Housekeeping now' }).click();
+    // Keyed on a command created after the click, so an earlier run (the desktop run, for mobile) cannot satisfy it.
     await expect
-      .poll(async () => (await api<{ name: string; status: string }[]>(request, await getKey(), 'command')).some((c) => c.name === 'Housekeeping' && c.status === 'completed'), {
+      .poll(async () => (await housekeeping()).some((c) => !before.has(c.id) && c.status === 'completed'), {
         timeout: 15_000,
-        message: 'Housekeeping command should complete',
+        message: 'a new Housekeeping command should complete',
       })
       .toBe(true);
-    await expect(page.getByText('Housekeeping').first()).toBeVisible();
+    // The Tasks queue table shows the new run as Completed without a reload.
+    await expect(completedRows, 'Tasks queue should show the new run as Completed').toHaveCount(completedBefore + 1);
+    expect(await page.evaluate(() => (window as unknown as { __live?: boolean }).__live), 'page must not have reloaded').toBe(true);
     void testInfo;
   });
 
@@ -187,6 +227,23 @@ test.describe('smoke', () => {
     await expect(page.getByRole('button', { name: `Edit ${name}` })).toBeVisible();
   });
 
+  test('8. backup create and download', async () => {
+    await visit(page, '/system/backup');
+    await expect(page.getByRole('heading', { name: 'Backup', level: 1 })).toBeVisible();
+    const downloads = page.getByRole('button', { name: /^Download / });
+    const before = await downloads.count();
+    await page.getByRole('button', { name: 'Backup now' }).click();
+    await expect(page.getByText('Backup created').first()).toBeVisible();
+    await expect(downloads, 'new backup should be listed').toHaveCount(before + 1);
+
+    const label = (await downloads.first().getAttribute('aria-label')) ?? '';
+    const backupName = label.replace(/^Download /, '');
+    expect(backupName).toMatch(/\.zip$/);
+    const [download] = await Promise.all([page.waitForEvent('download'), downloads.first().click()]);
+    expect(download.suggestedFilename()).toBe(backupName);
+    const path = await download.path();
+    expect(fs.statSync(path).size, 'downloaded backup should not be empty').toBeGreaterThan(0);
+  });
 });
 
 // Accessibility checks are independent of each other, so one failing page does not skip the rest.

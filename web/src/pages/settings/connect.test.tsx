@@ -149,6 +149,19 @@ describe('Connect', () => {
     expect(api.callsTo('PUT', 'notification/5')[0].body).toMatchObject({ id: 5, settings: { webHookUrl: '********' } });
   });
 
+  it('saves a webhook whose stored URL is masked', async () => {
+    const user = userEvent.setup();
+    const hook = { ...template('Webhook', { url: '********', method: 'POST' }), id: 6, name: 'My Hook' };
+    setup([hook], { 'PUT notification/:id': () => hook });
+    renderPage();
+    await user.click(await screen.findByRole('button', { name: 'Edit My Hook' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText(/^URL/)).toHaveValue('********');
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(api.callsTo('PUT', 'notification/6')).toHaveLength(1));
+    expect(api.callsTo('PUT', 'notification/6')[0].body).toMatchObject({ id: 6, settings: { url: '********' } });
+  });
+
   it('deletes after confirmation', async () => {
     const user = userEvent.setup();
     setup([stored()], { 'DELETE notification/:id': () => ({}) });

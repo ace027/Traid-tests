@@ -63,10 +63,13 @@ describe('CommandActivity', () => {
     expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
-  it('hides the button when idle but keeps the live region', async () => {
+  it('keeps an idle button with recent results and the live region', async () => {
+    const user = userEvent.setup();
     setup([cmd({ status: 'completed', ended: '2026-01-01T00:01:00Z' })]);
     await waitFor(() => expect(api.callsTo('GET', 'command')).toHaveLength(1));
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'No running commands' }));
+    expect(screen.getByText('No active commands')).toBeInTheDocument();
+    expect(screen.getByText('Recently completed')).toBeInTheDocument();
     expect(screen.getByTestId('command-announcer')).toHaveAttribute('aria-live', 'polite');
   });
 
@@ -85,6 +88,15 @@ describe('CommandActivity', () => {
     observer.disconnect();
     expect(mutations).toBe(0);
     expect(announcer).toHaveTextContent(/^Refresh Series completed$/);
+  });
+
+  it('keeps the open popover and button when the last command finishes', async () => {
+    const user = userEvent.setup();
+    const { refetch } = setup([cmd({})]);
+    await user.click(await screen.findByRole('button', { name: '1 running command' }));
+    await refetch([cmd({ status: 'completed', ended: '2026-01-01T00:01:00Z' })]);
+    expect(await screen.findByRole('button', { name: 'No running commands' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Recently completed')).toBeInTheDocument();
   });
 
   it('toasts failures with the message', async () => {

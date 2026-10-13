@@ -178,7 +178,7 @@ export function NotificationModal({ notification, onClose }: { notification: Not
     if (!name.trim()) next.name = 'Name is required';
     let settings: Record<string, unknown> = {};
     if (impl === 'Webhook') {
-      if (!isHttpUrl(url)) next.url = 'Enter a valid http(s) URL';
+      if (url !== MASKED && !isHttpUrl(url)) next.url = 'Enter a valid http(s) URL';
       settings = { url: url.trim(), method, username, password };
     } else if (impl === 'Discord') {
       if (webHookUrl !== MASKED && !isHttpUrl(webHookUrl)) next.webHookUrl = 'Enter a valid http(s) URL';

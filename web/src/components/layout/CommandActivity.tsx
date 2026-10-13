@@ -1,6 +1,6 @@
 import { useContext, useEffect, useId, useRef, useState } from 'react';
 import { QueryClientContext, useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Activity, Loader2 } from 'lucide-react';
 import type { Command } from '@sonarr/shared';
 import { api, queryKeys } from '../../lib/api';
 import { StatusBadge, useToast, type StatusKind } from '../ui';
@@ -90,21 +90,29 @@ function CommandActivityInner() {
       <div aria-live="polite" role="status" className="sr-only" data-testid="command-announcer">
         {announcement}
       </div>
-      {running.length > 0 && (
-        <button
-          ref={buttonRef}
-          type="button"
-          aria-expanded={open}
-          aria-controls={open ? popoverId : undefined}
-          aria-label={`${running.length} running ${running.length === 1 ? 'command' : 'commands'}`}
-          onClick={() => setOpen((o) => !o)}
-          className="focus-ring flex h-9 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-text-muted hover:bg-surface-hover hover:text-text"
-        >
-          <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
-          <span aria-hidden="true">{running.length}</span>
-        </button>
-      )}
-      {open && running.length > 0 && (
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-expanded={open}
+        aria-controls={open ? popoverId : undefined}
+        aria-label={
+          running.length > 0
+            ? `${running.length} running ${running.length === 1 ? 'command' : 'commands'}`
+            : 'No running commands'
+        }
+        onClick={() => setOpen((o) => !o)}
+        className="focus-ring flex h-9 items-center gap-1.5 rounded-md border border-border px-2.5 text-xs font-medium text-text-muted hover:bg-surface-hover hover:text-text"
+      >
+        {running.length > 0 ? (
+          <>
+            <Loader2 aria-hidden="true" className="size-4 animate-spin motion-reduce:animate-none" />
+            <span aria-hidden="true">{running.length}</span>
+          </>
+        ) : (
+          <Activity aria-hidden="true" className="size-4" />
+        )}
+      </button>
+      {open && (
         <div
           id={popoverId}
           role="region"
@@ -112,6 +120,7 @@ function CommandActivityInner() {
           className="animate-pop-in absolute right-0 z-50 mt-2 max-h-96 w-80 max-w-[90vw] overflow-y-auto rounded-lg border border-border bg-surface-raised p-3 shadow-lg"
         >
           <h2 className="mb-2 text-xs font-semibold tracking-wide text-text-muted uppercase">Active</h2>
+          {running.length === 0 && <p className="text-sm text-text-muted">No active commands</p>}
           <ul className="flex flex-col gap-2">
             {running.map((c) => (
               <li key={c.id} className="flex flex-col gap-0.5 text-sm">
