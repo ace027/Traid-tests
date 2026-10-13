@@ -2,7 +2,7 @@
 
 ## Phases
 
-- [ ] Phase 1: Foundation and App Shell (4 plans)
+- [x] Phase 1: Foundation and App Shell (4 plans)
 - [ ] Phase 2: Series Library (4 plans)
 - [ ] Phase 3: Indexers, Search and Download Clients (4 plans)
 - [ ] Phase 4: Import, Activity, Wanted and Calendar (4 plans)
@@ -69,7 +69,7 @@
 
 | Phase | Plans | Completed | Status |
 |-------|-------|-----------|--------|
-| 1 | 4 | 4 | Executed |
+| 1 | 4 | 4 | Complete |
 | 2 | 4 | 0 | Pending |
 | 3 | 4 | 0 | Pending |
 | 4 | 4 | 0 | Pending |
