@@ -109,6 +109,7 @@ export function WantedTable({ kind, title, description, emptyTitle, emptyDescrip
   const sortDir = (key: WantedSortKey) => (params.sortKey === key ? params.sortDirection : null);
 
   const allSelected = records.length > 0 && records.every((r) => selected.has(r.id));
+  const someSelected = selected.size > 0 && !allSelected;
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(records.map((r) => r.id)));
   const toggleOne = (id: number) =>
     setSelected((prev) => {
@@ -194,6 +195,10 @@ export function WantedTable({ kind, title, description, emptyTitle, emptyDescrip
                     type="checkbox"
                     aria-label="Select all"
                     checked={allSelected}
+                    aria-checked={someSelected ? 'mixed' : allSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someSelected;
+                    }}
                     disabled={records.length === 0}
                     onChange={toggleAll}
                     className="focus-ring size-4 rounded border-control-border accent-accent"

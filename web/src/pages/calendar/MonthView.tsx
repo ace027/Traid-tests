@@ -177,6 +177,7 @@ export function MonthView({ days, month, episodesByDay, firstDayOfWeek, colorImp
   const [focusKey, setFocusKey] = useState(() => dayKey(today ?? inMonth ?? days[0]));
   const cellRefs = useRef(new Map<string, HTMLDivElement>());
   const shouldFocus = useRef(false);
+  const idBase = useId();
 
   // Keep the roving tab stop inside the visible range when the month changes.
   const visibleKeys = days.map(dayKey);
@@ -223,10 +224,10 @@ export function MonthView({ days, month, episodesByDay, firstDayOfWeek, colorImp
             <div
               key={name}
               role="columnheader"
-              aria-label={name}
               className="px-2 py-2 text-center text-xs font-semibold tracking-wide text-text-muted uppercase"
             >
-              {short[i]}
+              <span aria-hidden="true">{short[i]}</span>
+              <span className="sr-only">{name}</span>
             </div>
           ))}
         </div>
@@ -249,7 +250,7 @@ export function MonthView({ days, month, episodesByDay, firstDayOfWeek, colorImp
                   }}
                   role="gridcell"
                   tabIndex={key === activeKey ? 0 : -1}
-                  aria-label={`${formatDayLong(day)}${isToday ? ', today' : ''}, ${count === 0 ? 'no episodes' : `${count} ${count === 1 ? 'episode' : 'episodes'}`}`}
+                  aria-labelledby={`${idBase}-${key}`}
                   aria-current={isToday ? 'date' : undefined}
                   onFocus={(e) => {
                     if (e.target === e.currentTarget) setFocusKey(key);
@@ -261,6 +262,9 @@ export function MonthView({ days, month, episodesByDay, firstDayOfWeek, colorImp
                     isToday && 'bg-accent-soft',
                   )}
                 >
+                  <span id={`${idBase}-${key}`} className="sr-only">
+                    {`${formatDayLong(day)}${isToday ? ', today' : ''}, ${count === 0 ? 'no episodes' : `${count} ${count === 1 ? 'episode' : 'episodes'}`}`}
+                  </span>
                   <span
                     aria-hidden="true"
                     className={cn(

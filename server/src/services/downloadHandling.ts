@@ -112,7 +112,12 @@ export async function processFailed(app: FastifyInstance, t: TrackedDownload): P
   const downloadId = grabbedDownloadId(t);
   if (downloadEvents(app.db, downloadId, 'downloadFailed').length > 0) return { state: 'failed' };
   const grabbed = t.match.rows[0]!;
-  const data = JSON.parse(grabbed.data) as Record<string, string>;
+  let data: Record<string, string> = {};
+  try {
+    data = JSON.parse(grabbed.data) as Record<string, string>;
+  } catch {
+    // corrupt grab data: fall back to an empty record so the failure is still recorded
+  }
   const message = t.item.message ?? 'Download failed';
   recordEvent(app, 'downloadFailed', {
     seriesId: t.match.seriesId,

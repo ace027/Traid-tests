@@ -320,12 +320,12 @@ describe('Series detail', () => {
     expect(api.callsTo('DELETE', 'series/1')[0].query.get('deleteFiles')).toBe('true');
   });
 
-  it('shows an info toast when searching before indexers exist', async () => {
+  it('shows an error toast when the search command fails', async () => {
     api = mockApi(detailRoutes({ 'POST command': () => ({ status: 400, body: { message: 'Unknown command' } }) }));
     const user = userEvent.setup();
     renderDetail();
     await user.click(await screen.findByRole('button', { name: 'Search Monitored' }));
-    expect(await screen.findByText('Searching is available once indexers are configured')).toBeInTheDocument();
+    expect(await screen.findByText('Unknown command')).toBeInTheDocument();
     expect(api.callsTo('POST', 'command')[0].body).toEqual({ name: 'SeriesSearch', seriesId: 1 });
   });
 

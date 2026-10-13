@@ -55,7 +55,7 @@ function eventLines(e: CalendarEpisode, opts: ICalOptions, now: Date): string[] 
     const minutes = e.runtime > 0 ? e.runtime : e.series.runtime > 0 ? e.series.runtime : DEFAULT_RUNTIME_MINUTES;
     lines.push(`DTSTART:${utcStamp(start)}`, `DTEND:${utcStamp(new Date(start.getTime() + minutes * 60_000))}`);
   } else {
-    const day = start && !Number.isNaN(start.getTime()) ? new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())) : airDay(e);
+    const day = airDay(e) ?? (start && !Number.isNaN(start.getTime()) ? new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())) : undefined);
     if (!day) return undefined;
     lines.push(`DTSTART;VALUE=DATE:${dateStamp(day)}`, `DTEND;VALUE=DATE:${dateStamp(new Date(day.getTime() + 86_400_000))}`);
   }

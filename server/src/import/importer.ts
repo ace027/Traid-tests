@@ -140,17 +140,23 @@ async function importOne(app: FastifyInstance, decision: ImportDecision, opts: I
     }
   }
 
-  const size = (await fs.promises.stat(importedPath)).size;
-  const { id } = upsertEpisodeFile(db, {
-    seriesId: series.id,
-    seasonNumber: episodes[0]!.seasonNumber,
-    path: importedPath,
-    relativePath: path.relative(series.path, importedPath),
-    size,
-    quality: decision.quality,
-    releaseGroup: decision.releaseGroup ?? null,
-    episodeIds: ids,
-  });
+  let id: number;
+  try {
+    const size = (await fs.promises.stat(importedPath)).size;
+    ({ id } = upsertEpisodeFile(db, {
+      seriesId: series.id,
+      seasonNumber: episodes[0]!.seasonNumber,
+      path: importedPath,
+      relativePath: path.relative(series.path, importedPath),
+      size,
+      quality: decision.quality,
+      releaseGroup: decision.releaseGroup ?? null,
+      episodeIds: ids,
+    }));
+  } catch (err) {
+    app.log.error({ err, importedPath, source, mode: opts.mode }, 'Imported file has no episode file record (orphan on disk)');
+    return { decision, result: 'failed', message: `Failed to record ${path.basename(importedPath)}: ${errorMessage(err)}` };
+  }
   const downloadId = decision.downloadId ?? opts.downloadId;
   recordEvent(app, 'downloadFolderImported', {
     seriesId: series.id,
@@ -184,7 +190,13 @@ export async function importDecisions(app: FastifyInstance, decisions: readonly 
       results.set(d, { decision: d, result: 'rejected', message: 'Episode(s) already imported from another file in this download' });
       continue;
     }
-    const r = await importOne(app, d, opts, media);
+    let r: ImportResult;
+    try {
+      r = await importOne(app, d, opts, media);
+    } catch (err) {
+      app.log.warn({ err, source: d.source.path }, 'Import failed');
+      r = { decision: d, result: 'failed', message: `Failed to import ${path.basename(d.source.path)}: ${errorMessage(err)}` };
+    }
     results.set(d, r);
     if (r.result === 'imported') {
       d.episodes.forEach((e) => claimed.add(e.id));
