@@ -1,7 +1,7 @@
 ---
 phase: 05-connections-system-and-polish
 compacted: 2026-10-13
-original_summaries: [05-01-SUMMARY.md, 05-02-SUMMARY.md, 05-03-SUMMARY.md, 05-04-SUMMARY.md, 05-05-SUMMARY.md]
+original_summaries: [05-01-SUMMARY.md, 05-02-SUMMARY.md, 05-03-SUMMARY.md, 05-04-SUMMARY.md, 05-05-SUMMARY.md, 05-06-SUMMARY.md]
 requirements_satisfied: [REQ-17, REQ-18, REQ-16, REQ-03]
 ---
 
@@ -13,6 +13,7 @@ requirements_satisfied: [REQ-17, REQ-18, REQ-16, REQ-03]
 - 05-03 Backups, restore, restart and housekeeping (Complete): server/src/db/index.ts, server/src/routes/backup.ts, server/src/services/backup.test.ts, server/src/services/backup.ts, server/src/services/housekeeping.test.ts, server/src/services/housekeeping.ts, server/src/services/zip.test.ts, server/src/services/zip.ts
 - 05-04 System pages (Complete)
 - 05-05 Connect settings and live command activity (Complete): web/src/components/layout/CommandActivity.tsx, web/src/components/layout/Header.tsx, web/src/components/layout/commandActivity.test.tsx, web/src/pages/settings/Connect.tsx, web/src/pages/settings/NotificationModal.tsx, web/src/pages/settings/connect.test.tsx
+- 05-06 End-to-end smoke tests with Playwright (Complete)
 
 ## Decisions
 - 05-01: CheckHealth task is registered in index.ts, not buildApp. scheduler.test.ts asserts the exact 4 default tasks and I could not edit it.
@@ -28,6 +29,7 @@ requirements_satisfied: [REQ-17, REQ-18, REQ-16, REQ-03]
 - 05-05: CommandActivity renders nothing when there is no QueryClient, following the Sidebar pattern. layout.test.tsx renders the header without one and I could not edit
 - 05-05: The status 'connecting' maps to 'Reconnecting...'; the plan listed only that one in-between state.
 - 05-05: The popover opens only while commands are queued or started. Idle hides the button and keeps the aria-live region.
+- 05-06: none this run (nothing was changed)
 
 ## Conventions and Open Questions
 - 05-01 convention: app.health: check(), current() (async), onChange(fn({added, removed, current})), reportNotificationFailure(id), clearNotificationFailure(id), diskSpace(). The f
@@ -43,6 +45,9 @@ requirements_satisfied: [REQ-17, REQ-18, REQ-16, REQ-03]
 - 05-05 convention: useNotifications, useNotificationSchema, triggerLabels and NotificationTemplatePicker are exported from NotificationModal.tsx.
 - 05-05 convention: The announcer element has data-testid="command-announcer".
 - 05-05 convention: Any test that renders the full AppLayout with a QueryClient will now fetch GET command, so mock it.
+- 05-06 convention: `npm run e2e` runs a build first, then starts a fresh server on 127.0.0.1:8990 through `npx tsx server/src/e2e/start.ts`.
+- 05-06 convention: The mobile project depends on the desktop project and starts from a fresh state through its own setup.
+- 05-06 convention: The Chromium path comes from PLAYWRIGHT_CHROMIUM_PATH, otherwise from the newest chromium-* under /opt/pw-browsers.
 
 ## Files Modified
 | File | Change |
@@ -107,6 +112,7 @@ requirements_satisfied: [REQ-17, REQ-18, REQ-16, REQ-03]
 - 05-03 (REQ-17): 5/5 verification commands passed
 - 05-04 (REQ-17, REQ-03): 4/4 verification commands passed
 - 05-05 (REQ-16, REQ-18): 4/4 verification commands passed
+- 05-06 (REQ-16, REQ-17, REQ-18, REQ-03): 6/6 verification commands passed
 
 ## Agents
 - 05-01: engineering-senior-developer
@@ -114,8 +120,16 @@ requirements_satisfied: [REQ-17, REQ-18, REQ-16, REQ-03]
 - 05-03: engineering-backend-architect
 - 05-04: engineering-frontend-developer
 - 05-05: engineering-frontend-developer
+- 05-06: testing-qa-verification-specialist
 
 ## Also Covered
 - web/src/pages/system/hooks.ts
 - web/src/pages/system/system.test.tsx
 - web/src/components/layout/Sidebar.tsx
+- package.json
+- package-lock.json
+- playwright.config.ts
+- e2e/smoke.spec.ts
+- e2e/helpers.ts
+- README.md
+- .gitignore
