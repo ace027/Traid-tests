@@ -24,8 +24,8 @@ const variants: Record<ButtonVariant, string> = {
 };
 
 const sizes: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-sm gap-1.5 [&_svg]:size-4',
-  md: 'h-10 px-4 text-sm gap-2 [&_svg]:size-4',
+  sm: 'h-8 px-3 text-sm gap-1.5 [&_svg]:size-4 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:min-w-11',
+  md: 'h-10 px-4 text-sm gap-2 [&_svg]:size-4 [@media(pointer:coarse)]:h-11',
 };
 
 export const buttonClasses = (variant: ButtonVariant = 'secondary', size: ButtonSize = 'md', className?: string) =>

@@ -34,8 +34,12 @@ export function QualityProfileEditor({ profile, onClose, onSaved }: QualityProfi
   const [cutoff, setCutoff] = useState(() => withValidCutoff(profile.items, profile.cutoff));
   const [submitted, setSubmitted] = useState(false);
 
-  const create = useCreateQualityProfile({ onSuccess: onClose });
-  const update = useUpdateQualityProfile({ onSuccess: onClose });
+  const handleSaved = (saved: QualityProfile) => {
+    onSaved?.(saved);
+    onClose();
+  };
+  const create = useCreateQualityProfile();
+  const update = useUpdateQualityProfile();
   const save = isNew ? create : update;
 
   const allowedCount = items.filter((i) => i.allowed).length;
@@ -82,9 +86,8 @@ export function QualityProfileEditor({ profile, onClose, onSaved }: QualityProfi
       cutoff,
       items: items.map(({ quality, allowed }) => ({ quality, allowed })),
     };
-    const done = (saved: QualityProfile) => onSaved?.(saved);
-    if (isNew) create.mutate(body, { onSuccess: done });
-    else update.mutate({ ...body, id: profile.id }, { onSuccess: done });
+    if (isNew) create.mutate(body, { onSuccess: handleSaved });
+    else update.mutate({ ...body, id: profile.id }, { onSuccess: handleSaved });
   };
 
   const displayed = [...items].reverse();

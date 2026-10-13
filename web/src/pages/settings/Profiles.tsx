@@ -31,6 +31,7 @@ export function Profiles() {
           <Button
             variant="primary"
             icon={<Plus />}
+            loading={schema.isPending}
             disabled={!schema.data}
             onClick={() => schema.data && setEditing({ ...schema.data, id: 0, name: '' })}
           >
@@ -38,6 +39,14 @@ export function Profiles() {
           </Button>
         }
       />
+      {schema.isError && (
+        <div role="alert" className="mb-4 flex items-center gap-3 text-sm text-danger">
+          <span>{errorMessage(schema.error)}</span>
+          <Button size="sm" onClick={() => void schema.refetch()}>
+            Retry
+          </Button>
+        </div>
+      )}
       {profiles.isPending ? (
         <Spinner label="Loading profiles" />
       ) : profiles.isError ? (

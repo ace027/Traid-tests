@@ -49,7 +49,7 @@ export interface DefaultQualityDefinition {
   preferredSize: number | null;
 }
 
-// [id, min, max, preferred] in MB per minute (Sonarr defaults, approximated).
+// id -> [min, max, preferred] in MB per minute (Sonarr defaults, approximated).
 const SIZE_LIMITS: Record<number, [number, number | null, number | null]> = {
   0: [1, 100, 95],
   1: [2, 100, 95],

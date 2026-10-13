@@ -69,21 +69,25 @@ function DefinitionsTable({ definitions }: { definitions: QualityDefinition[] })
   );
   const save = useUpdateQualityDefinitions({ onSuccess: () => toast.success('Quality definitions saved') });
 
-  const errors = Object.fromEntries(definitions.map((d) => [d.id, validateDraft(drafts[d.id])]));
+  const draftOf = (d: QualityDefinition): Draft => drafts[d.id] ?? toDraft(d);
+  const errors = Object.fromEntries(definitions.map((d) => [d.id, validateDraft(draftOf(d))]));
   const hasErrors = Object.values(errors).some((e) => Object.keys(e).length > 0);
   const dirty = definitions.some((d) => {
     const a = toDraft(d);
-    const b = drafts[d.id];
+    const b = draftOf(d);
     return a.title !== b.title || a.minSize !== b.minSize || a.preferredSize !== b.preferredSize || a.maxSize !== b.maxSize;
   });
 
   const setField = (id: number, field: keyof Draft, value: string) =>
-    setDrafts((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+    setDrafts((prev) => {
+      const base = prev[id] ?? toDraft(definitions.find((d) => d.id === id)!);
+      return { ...prev, [id]: { ...base, [field]: value } };
+    });
 
   const onSave = () => {
     save.mutate(
       definitions.map((d) => {
-        const draft = drafts[d.id];
+        const draft = draftOf(d);
         return {
           ...d,
           title: draft.title.trim(),
@@ -111,7 +115,7 @@ function DefinitionsTable({ definitions }: { definitions: QualityDefinition[] })
           aria-describedby={error ? errorId : undefined}
           invalid={!!error}
           placeholder={placeholder}
-          value={drafts[d.id][field]}
+          value={draftOf(d)[field]}
           onChange={(e) => setField(d.id, field, e.target.value)}
         />
         {error && (
@@ -160,7 +164,7 @@ function DefinitionsTable({ definitions }: { definitions: QualityDefinition[] })
                   aria-label={`Title for ${d.quality.name}`}
                   aria-describedby={errors[d.id].title ? `def-${d.id}-title-error` : undefined}
                   invalid={!!errors[d.id].title}
-                  value={drafts[d.id].title}
+                  value={draftOf(d).title}
                   onChange={(e) => setField(d.id, 'title', e.target.value)}
                 />
                 {errors[d.id].title && (

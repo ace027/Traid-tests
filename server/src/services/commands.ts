@@ -156,18 +156,26 @@ export class CommandQueue {
         continue;
       }
       this.runningNames.add(row.name);
-      const p: Promise<void> = this.run(row, handler).finally(() => {
-        this.active.delete(p);
-        this.runningNames.delete(row.name);
-        this.kick();
-      });
+      const p: Promise<void> = this.run(row, handler)
+        .catch((err) => {
+          console.error('command run failed', err);
+        })
+        .finally(() => {
+          this.active.delete(p);
+          this.runningNames.delete(row.name);
+          try {
+            this.kick();
+          } catch (err) {
+            console.error('command queue kick failed', err);
+          }
+        });
       this.active.add(p);
     }
   }
 
   private async run(row: Row, handler: CommandHandler): Promise<void> {
-    this.update(row.id, { status: 'started', startedAt: new Date().toISOString() });
     try {
+      this.update(row.id, { status: 'started', startedAt: new Date().toISOString() });
       await handler({
         body: JSON.parse(row.body) as Record<string, unknown>,
         updateMessage: (message) => {

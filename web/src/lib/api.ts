@@ -162,33 +162,20 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
     resetInitializeCache();
     redirectToLogin(urlBase);
   }
-  if (!res.ok) {
-    const payload = (data && typeof data === 'object' ? data : {}) as {
-      message?: unknown;
-      errors?: unknown;
-    };
-    const message =
-      typeof payload.message === 'string' && payload.message
-        ? payload.message
-        : typeof data === 'string' && data
-          ? data
-          : res.statusText || `Request failed with status ${res.status}`;
-    const errors = Array.isArray(payload.errors)
-      ? (payload.errors as ApiValidationError[]).filter((e) => e && typeof e.errorMessage === 'string')
-      : Array.isArray(data)
-        ? (data as ApiValidationError[]).filter((e) => e && typeof e.errorMessage === 'string')
-        : [];
-    throw new ApiError(res.status, message, errors);
-  }
+  if (!res.ok) throw errorFrom(res, data);
   return data as T;
 }
 
 function errorFrom(res: Response, data: unknown): ApiError {
   const payload = (data && typeof data === 'object' ? data : {}) as { message?: unknown; errors?: unknown };
-  const message = typeof payload.message === 'string' && payload.message ? payload.message : res.statusText || `Request failed with status ${res.status}`;
-  const errors = Array.isArray(payload.errors)
-    ? (payload.errors as ApiValidationError[]).filter((e) => e && typeof e.errorMessage === 'string')
-    : [];
+  const message =
+    typeof payload.message === 'string' && payload.message
+      ? payload.message
+      : typeof data === 'string' && data
+        ? data
+        : res.statusText || `Request failed with status ${res.status}`;
+  const list = Array.isArray(payload.errors) ? payload.errors : Array.isArray(data) ? data : [];
+  const errors = (list as ApiValidationError[]).filter((e) => e && typeof e.errorMessage === 'string');
   return new ApiError(res.status, message, errors);
 }
 
