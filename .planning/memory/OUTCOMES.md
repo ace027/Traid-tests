@@ -38,3 +38,4 @@ Managed by memory-manager skill. Do not edit manually unless pruning old records
 | O-029 | 2026-10-13 | Sonarr-replica | 3 | 03-00 | design-ui-designer | quality-review | success | 5 | review, design | Phase 3 review PASSED in 2 cycle(s), 5 finding(s) |
 | O-030 | 2026-10-13 | Sonarr-replica | 3 | 03-00 | engineering-senior-developer | quality-review | success | 4 | review, engineering | Phase 3 review PASSED in 2 cycle(s), 5 finding(s) |
 | O-031 | 2026-10-13 | Sonarr-replica | 3 | 03-00 | engineering-frontend-developer | quality-review | success | 4 | review, engineering | Phase 3 review PASSED in 2 cycle(s), 5 finding(s) |
+| O-032 | 2026-10-13 | Sonarr-replica | 4 | 04-01 | engineering-backend-architect | implementation | success | 2 | import-activity-wanted-and-calendar, engineering | Phase 4 foundations: settings, naming engine and shared types: Complete |

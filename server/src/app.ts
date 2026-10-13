@@ -20,6 +20,11 @@ import { tagRoutes } from './routes/tag.js';
 import { episodeRoutes } from './routes/episode.js';
 import { episodeFileRoutes } from './routes/episodefile.js';
 import { releaseRoutes } from './routes/release.js';
+import { mediaConfigRoutes } from './routes/mediaConfig.js';
+import { wantedRoutes } from './routes/wanted.js';
+import { calendarRoutes } from './routes/calendar.js';
+import { manualImportRoutes } from './routes/manualimport.js';
+import { renameRoutes } from './routes/rename.js';
 import { AuthService } from './services/auth.js';
 import { Scheduler, DEFAULT_TASKS } from './services/scheduler.js';
 import { CommandQueue } from './services/commands.js';
@@ -197,6 +202,11 @@ export async function buildApp({ dataDir, logger = false, metadataProvider, sche
   await app.register(indexerRoutes);
   await app.register(downloadClientRoutes);
   await app.register(releaseRoutes);
+  await app.register(mediaConfigRoutes);
+  await app.register(wantedRoutes);
+  await app.register(calendarRoutes);
+  await app.register(manualImportRoutes);
+  await app.register(renameRoutes);
 
   commands.start();
   if (runScheduler) scheduler.start();

@@ -15,6 +15,8 @@ import {
 } from '@sonarr/shared';
 import { schema, type Db } from '../db/index.js';
 import { MetadataError, type ProviderEpisode } from './metadata/types.js';
+import { buildSeriesFolderName } from '../naming/naming.js';
+import { getNamingConfig } from './mediaConfig.js';
 import { isInside, realpathLoose, realRootFolders } from './paths.js';
 
 type SeriesRow = typeof schema.series.$inferSelect;
@@ -147,9 +149,8 @@ export function getSeries(db: Db, id: number): Series | undefined {
   return toApiSeries(row, getSeriesStatistics(db, [id]).get(id), seasons);
 }
 
-export function folderName(title: string, year: number): string {
-  const clean = title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '').replace(/[. ]+$/, '').trim() || 'Series';
-  return year > 0 ? `${clean} (${year})` : clean;
+export function folderName(db: Db, title: string, year: number): string {
+  return buildSeriesFolderName({ title, year }, getNamingConfig(db));
 }
 
 const slugify = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -243,8 +244,9 @@ export async function addSeries(app: FastifyInstance, input: AddSeriesInput): Pr
     seriesPath = explicitPath;
     if (pathTaken(seriesPath)) throw validationError('path', 'Path is already used by another series');
   } else {
-    seriesPath = path.join(rootFolderPath, folderName(title, info.year));
-    if (pathTaken(seriesPath)) seriesPath = path.join(rootFolderPath, `${folderName(title, info.year)} (${info.tvMazeId})`);
+    const folder = folderName(db, title, info.year);
+    seriesPath = path.join(rootFolderPath, folder);
+    if (pathTaken(seriesPath)) seriesPath = path.join(rootFolderPath, `${folder} (${info.tvMazeId})`);
   }
 
   const now = new Date();
