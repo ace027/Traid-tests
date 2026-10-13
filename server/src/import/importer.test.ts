@@ -133,6 +133,41 @@ describe('import pipeline', () => {
     expect(fs.readdirSync(path.join(show.path, 'Season 01'))).toEqual(['Show - S01E01 - Pilot WEBDL-1080p.mkv']);
   });
 
+  it('an upgrade whose old file holds the exact destination name ends up at that name', async () => {
+    // no quality in the file name: the upgrade computes the very name the old file holds
+    saveNamingConfig(t.app.db, { ...getNamingConfig(t.app.db), standardEpisodeFormat: '{Series Title} - S{season:00}E{episode:00} - {Episode Title}' });
+    await importPath(write(dl, 'a/Show.S01E01.720p.HDTV-GRP.mkv', 'old'));
+    const season = path.join(show.path, 'Season 01');
+    const dest = path.join(season, 'Show - S01E01 - Pilot.mkv');
+    expect(fs.readdirSync(season)).toEqual(['Show - S01E01 - Pilot.mkv']);
+    const [r] = await importPath(write(dl, 'b/Show.S01E01.1080p.WEB-DL-GRP.mkv', 'proper'));
+    expect(r).toMatchObject({ result: 'imported', importedPath: dest });
+    expect(fs.readdirSync(season)).toEqual(['Show - S01E01 - Pilot.mkv']);
+    expect(fs.readFileSync(dest, 'utf8')).toBe('proper');
+    const files = t.app.db.select().from(schema.episodeFiles).all();
+    expect(files).toHaveLength(1);
+    expect(files[0]).toMatchObject({ path: dest, relativePath: path.join('Season 01', 'Show - S01E01 - Pilot.mkv') });
+    expect(episode(show.id, 1, 1).episodeFileId).toBe(files[0]!.id);
+  });
+
+  it('a failed transfer during an upgrade keeps the old file, its row and link', async () => {
+    await importPath(write(dl, 'a/Show.S01E01.720p.HDTV-GRP.mkv', 'old'));
+    const before = t.app.db.select().from(schema.episodeFiles).all();
+    expect(before).toHaveLength(1);
+    const eventsBefore = history().map((h) => h.eventType);
+    const src = write(dl, 'b/Show.S01E01.1080p.WEB-DL-GRP.mkv', 'new');
+    vi.spyOn(fs.promises, 'rename').mockRejectedValue(Object.assign(new Error('read-only file system'), { code: 'EROFS' }));
+    const [r] = await importPath(src, 'move');
+    expect(r).toMatchObject({ result: 'failed' });
+    expect(fs.readFileSync(before[0]!.path, 'utf8')).toBe('old');
+    expect(fs.readFileSync(src, 'utf8')).toBe('new');
+    expect(t.app.db.select().from(schema.episodeFiles).all()).toEqual(before);
+    expect(episode(show.id, 1, 1).episodeFileId).toBe(before[0]!.id);
+    const events = history().map((h) => h.eventType);
+    expect(events).toEqual(eventsBefore);
+    expect(events).not.toContain('episodeFileDeleted');
+  });
+
   it('rejects a file that is not an upgrade and leaves it in place', async () => {
     await importPath(write(dl, 'a/Show.S01E01.1080p.WEB-DL-GRP.mkv', 'better'));
     const src = write(dl, 'b/Show.S01E01.720p.HDTV-GRP.mkv', 'worse');
