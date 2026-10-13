@@ -116,6 +116,14 @@ export class QueueService {
     });
     this.lastRefresh = Date.now();
     this.tracked = this.build();
+    const live = new Set<string>();
+    for (const { row, items } of this.itemsByClient.values()) for (const item of items) live.add(`${row.id}:${item.downloadId}`);
+    for (const [key, id] of [...this.ids]) {
+      if (live.has(key)) continue;
+      this.ids.delete(key);
+      this.firstSeen.delete(id);
+    }
+    for (const key of [...this.ignored]) if (!live.has(key)) this.ignored.delete(key);
     const signature = JSON.stringify(
       this.tracked.map((t) => [t.id, t.item.status, t.item.remainingSize, t.resource.trackedDownloadState]),
     );
@@ -301,6 +309,12 @@ export class QueueService {
       return t;
     });
     for (const t of targets) {
+      if (opts.removeFromClient) {
+        const row = this.app.db.select().from(schema.downloadClients).where(eq(schema.downloadClients.id, t.clientId)).get();
+        if (row) await clientFor(row).removeItem(t.item.downloadId, true);
+      } else {
+        this.ignored.add(t.key);
+      }
       if (opts.blocklist && t.match) {
         const grabbed = t.match.rows[0]!;
         const data = JSON.parse(grabbed.data) as Record<string, string>;
@@ -316,12 +330,6 @@ export class QueueService {
           message: 'Removed from the queue',
           torrentInfoHash: t.protocol === 'torrent' ? t.item.downloadId : (data.torrentInfoHash ?? null),
         });
-      }
-      if (opts.removeFromClient) {
-        const row = this.app.db.select().from(schema.downloadClients).where(eq(schema.downloadClients.id, t.clientId)).get();
-        if (row) await clientFor(row).removeItem(t.item.downloadId, true);
-      } else {
-        this.ignored.add(t.key);
       }
       this.tracked = this.tracked.filter((x) => x.id !== t.id);
       const entry = this.itemsByClient.get(t.clientId);

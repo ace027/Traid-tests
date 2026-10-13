@@ -132,7 +132,7 @@ function ReleaseRow({
               className="focus-ring inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-xs font-medium whitespace-nowrap text-warning hover:bg-surface-hover"
             >
               <TriangleAlert aria-hidden="true" className="size-4" />
-              {release.temporarilyRejected && !release.rejected ? 'Temporarily rejected' : 'Rejected'} ({release.rejections.length})
+              {release.temporarilyRejected ? 'Temporarily rejected' : 'Rejected'} ({release.rejections.length})
               <span className="sr-only">, {showReasons ? 'hide' : 'show'} reasons</span>
             </button>
             {showReasons && (

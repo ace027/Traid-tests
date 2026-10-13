@@ -97,7 +97,7 @@ export class NzbgetClient implements DownloadClient {
     const items: DownloadClientItem[] = [];
     for (const g of groups ?? []) {
       if (!this.inCategory(g.Category)) continue;
-      const left = Math.round(((g.RemainingSizeMB ?? 0) + 0) * MIB);
+      const left = Math.round((g.RemainingSizeMB ?? 0) * MIB);
       const st = g.Status.toUpperCase();
       const status: DownloadClientItem['status'] =
         st === 'PAUSED' ? 'paused' : st === 'QUEUED' || st === 'PP_QUEUED' ? 'queued' : 'downloading';

@@ -132,7 +132,11 @@ export async function grabRelease(
   });
   app.log.info({ title: release.title, client: row.name, interactive: opts.interactive }, 'Release grabbed');
 
-  await getQueue(app).refresh();
+  try {
+    await getQueue(app).refresh();
+  } catch (err) {
+    app.log.warn(`Queue refresh after grab failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
   app.events.publish('queue', 'updated');
   return { downloadId, clientName: row.name };
 }

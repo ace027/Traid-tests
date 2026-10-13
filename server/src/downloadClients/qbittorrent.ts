@@ -44,6 +44,7 @@ export function mapQbittorrentState(state: string): DownloadClientItem['status']
 export class QbittorrentClient implements DownloadClient {
   private readonly fetch: FetchFn;
   private cookie: string | undefined;
+  private loggedIn = false;
 
   constructor(
     private readonly settings: DownloadClientSettings,
@@ -84,8 +85,6 @@ export class QbittorrentClient implements DownloadClient {
     return res;
   }
 
-  private loggedIn = false;
-
   async test(): Promise<void> {
     await this.login();
     this.loggedIn = true;
@@ -102,7 +101,7 @@ export class QbittorrentClient implements DownloadClient {
     } else {
       if (!torrentFile) throw new DownloadClientError('A torrent file is required when there is no magnet link');
       hash = infoHashFromTorrent(torrentFile);
-      form.set('torrents', new Blob([torrentFile as unknown as ArrayBuffer], { type: 'application/x-bittorrent' }), `${hash}.torrent`);
+      form.set('torrents', new Blob([new Uint8Array(torrentFile)], { type: 'application/x-bittorrent' }), `${hash}.torrent`);
     }
     if (this.settings.category) form.set('category', this.settings.category);
     form.set('paused', 'false');

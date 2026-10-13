@@ -96,7 +96,17 @@ export async function searchIndexers(
   if (criteria.length === 0) return [];
   const { releases } = await queryIndexers(app, purpose, async (client) => {
     const out: ReleaseInfo[] = [];
-    for (const c of criteria) out.push(...(await client.search(c)));
+    let firstError: unknown;
+    let failures = 0;
+    for (const c of criteria) {
+      try {
+        out.push(...(await client.search(c)));
+      } catch (err) {
+        failures++;
+        firstError ??= err;
+      }
+    }
+    if (failures === criteria.length) throw firstError;
     return out;
   });
   return releases;
@@ -180,18 +190,34 @@ export async function processDecisions(app: FastifyInstance, decisions: readonly
 interface Totals {
   found: number;
   grabbed: number;
+  failed?: number;
 }
 
-const add = (a: Totals, b: Totals): Totals => ({ found: a.found + b.found, grabbed: a.grabbed + b.grabbed });
-const message = (t: Totals) => `Found ${t.found} releases, grabbed ${t.grabbed}`;
+const add = (a: Totals, b: Totals): Totals => {
+  const out: Totals = { found: a.found + b.found, grabbed: a.grabbed + b.grabbed };
+  const failed = (a.failed ?? 0) + (b.failed ?? 0);
+  if (failed > 0) out.failed = failed;
+  return out;
+};
+const message = (t: Totals) => `Found ${t.found} releases, grabbed ${t.grabbed}` + (t.failed ? `, ${t.failed} search batches failed` : '');
 
 async function runEpisodes(app: FastifyInstance, episodeIds: readonly number[]): Promise<Totals> {
   let totals: Totals = { found: 0, grabbed: 0 };
+  let batches = 0;
+  let firstError: unknown;
   for (let i = 0; i < episodeIds.length; i += SEARCH_BATCH_SIZE) {
-    const decisions = await searchEpisodes(app, episodeIds.slice(i, i + SEARCH_BATCH_SIZE), { interactive: false });
-    const { grabbed } = await processDecisions(app, decisions);
-    totals = add(totals, { found: decisions.length, grabbed });
+    batches++;
+    try {
+      const decisions = await searchEpisodes(app, episodeIds.slice(i, i + SEARCH_BATCH_SIZE), { interactive: false });
+      const { grabbed } = await processDecisions(app, decisions);
+      totals = add(totals, { found: decisions.length, grabbed });
+    } catch (err) {
+      firstError ??= err;
+      totals = add(totals, { found: 0, grabbed: 0, failed: 1 });
+      app.log.warn(`Search batch failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
+  if (batches > 0 && totals.failed === batches) throw firstError;
   return totals;
 }
 
@@ -199,7 +225,14 @@ async function runEpisodes(app: FastifyInstance, episodeIds: readonly number[]):
 async function runSeason(app: FastifyInstance, series: SeriesRow, seasonNumber: number): Promise<Totals> {
   const decisions = await searchSeason(app, series, seasonNumber, { interactive: false });
   const packs = decisions.filter((d) => d.approved && d.remoteEpisode.parsed?.fullSeason);
-  const packResult = packs.length > 0 ? await processDecisions(app, packs) : { grabbed: 0 };
+  let packResult = { grabbed: 0 };
+  if (packs.length > 0) {
+    try {
+      packResult = await processDecisions(app, packs);
+    } catch (err) {
+      app.log.warn(`Season pack grab failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
   const totals: Totals = { found: decisions.length, grabbed: packResult.grabbed };
   if (packResult.grabbed > 0) return totals;
   const now = new Date();

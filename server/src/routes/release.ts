@@ -6,7 +6,7 @@ import { schema } from '../db/index.js';
 import { qualityWeight } from '../decision/prioritize.js';
 import type { DownloadDecision } from '../decision/types.js';
 import type { QualityModel } from '../parser/index.js';
-import { grabRelease, stripApiKey } from '../services/grab.js';
+import { GrabError, grabRelease, stripApiKey } from '../services/grab.js';
 import { releaseKey, searchEpisodes, searchSeason } from '../services/search.js';
 
 export const RELEASE_CACHE_TTL_MS = 30 * 60_000;
@@ -128,7 +128,9 @@ export async function releaseRoutes(app: FastifyInstance): Promise<void> {
     try {
       await grabRelease(app, decision, { interactive: true });
     } catch (err) {
-      return reply.code(409).send({ message: err instanceof Error ? err.message : 'Unable to grab the release' });
+      if (err instanceof GrabError) return reply.code(409).send({ message: err.message });
+      app.log.error(err);
+      return reply.code(500).send({ message: 'Unable to grab the release' });
     }
     return reply.code(200).send(toReleaseResource(decision));
   });
