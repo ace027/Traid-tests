@@ -192,7 +192,7 @@ export async function downloadClientRoutes(app: FastifyInstance): Promise<void> 
         }
       }),
     );
-    return reply.code(results.every((r) => r.isValid) ? 200 : 400).send(results);
+    return reply.code(200).send(results);
   });
 
   registerQueueRoutes(app);

@@ -124,7 +124,7 @@ describe('download client API', () => {
     await req('POST', '/api/v3/downloadclient', body({ name: 'b' }, { host: 'bad' }));
     setDownloadClientFactory((cfg) => (cfg.settings.host === 'bad' ? bad : good));
     const res = await req('POST', '/api/v3/downloadclient/testall');
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual([
       { id: 1, isValid: true, validationFailures: [] },
       { id: 2, isValid: false, validationFailures: [{ propertyName: '', errorMessage: 'down' }] },

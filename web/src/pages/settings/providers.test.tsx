@@ -251,6 +251,19 @@ describe('Download clients', () => {
     ...overrides,
   });
 
+  it('tests all clients and reports failures', async () => {
+    api = mockApi(
+      clientRoutes({
+        'POST downloadclient/testall': () => [{ id: 1, isValid: false, validationFailures: [{ propertyName: '', errorMessage: 'Connection refused' }] }],
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage(<DownloadClients />);
+    await screen.findByRole('button', { name: 'Edit SAB' });
+    await user.click(screen.getByRole('button', { name: 'Test All' }));
+    expect(await screen.findByText('SAB: Connection refused')).toBeInTheDocument();
+  });
+
   it('lists clients without axe violations', async () => {
     api = mockApi(clientRoutes());
     const { container } = renderPage(<DownloadClients />);
