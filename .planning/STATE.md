@@ -1,13 +1,13 @@
 # Project State
 
 ## Current Position
-- **Phase**: 3 of 5 (planned)
-- **Status**: Phase 3 planned -- 5 plans across 3 waves
-- **Last Activity**: Phase 3 planning (2026-10-13)
+- **Phase**: 3 of 5 (executing)
+- **Status**: Phase 3 executing — Plan 03-01 complete
+- **Last Activity**: Plan 03-01 execution (2026-10-13)
 
 ## Progress
 ```
-[########............] 42% — 8/19 plans complete
+[#########...........] 45% — 9/20 plans complete
 ```
 
 ## Recent Decisions
@@ -37,3 +37,7 @@ Run `/triad:build` to execute Phase 3: Indexers, Search and Download Clients
 - Plan 02-01 (Wave 1): Series data model, TVmaze provider and series API — Complete
 - Plan 02-03 (Wave 2): Episodes API, refresh and disk scan commands, library import — Complete with Warnings
 - Plan 02-04 (Wave 2): Series UI: add, library import, index and detail — Complete
+
+## Phase 3 Results
+(build started 2026-10-13)
+- Plan 03-01 (Wave 1): Phase 3 foundations: schema, shared types, scheduler, history and blocklist — Complete

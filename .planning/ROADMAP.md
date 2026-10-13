@@ -71,6 +71,6 @@
 |-------|-------|-----------|--------|
 | 1 | 4 | 4 | Complete |
 | 2 | 4 | 4 | Complete |
-| 3 | 5 | 0 | Planned |
+| 3 | 5 | 1 | In Progress |
 | 4 | 4 | 0 | Pending |
 | 5 | 3 | 0 | Pending |
