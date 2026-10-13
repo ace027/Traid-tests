@@ -12,6 +12,19 @@ describe('qualities', () => {
     expect(defaultQualityDefinitions).toHaveLength(QUALITIES.length);
   });
 
+  it('orders qualities lowest to highest with increasing weights', () => {
+    const w = (name: string) => defaultQualityDefinitions.find((d) => d.quality.name === name)!.weight;
+    const weights = defaultQualityDefinitions.map((d) => d.weight);
+    expect(weights).toEqual([...weights].sort((x, y) => x - y));
+    expect(w('WEBDL-1080p')).toBeGreaterThan(w('HDTV-720p'));
+    expect(w('Raw-HD')).toBeGreaterThan(w('WEBRip-480p'));
+    expect(w('Bluray-1080p Remux')).toBeGreaterThan(w('Bluray-1080p'));
+    expect(w('HDTV-2160p')).toBeGreaterThan(w('Bluray-1080p Remux'));
+    for (let i = 1; i < QUALITIES.length; i++) {
+      expect(QUALITIES[i]!.resolution).toBeGreaterThanOrEqual(QUALITIES[i - 1]!.resolution);
+    }
+  });
+
   it('every default profile cutoff is allowed in that profile', () => {
     for (const p of defaultQualityProfiles) {
       const item = p.items.find((i) => i.quality.id === p.cutoff);

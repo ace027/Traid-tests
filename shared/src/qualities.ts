@@ -14,27 +14,28 @@ export interface Quality {
   resolution: number;
 }
 
+/** Ordered lowest to highest quality; array position defines rank (and default weight). */
 export const QUALITIES: readonly Quality[] = [
   { id: 0, name: 'Unknown', source: 'unknown', resolution: 0 },
   { id: 1, name: 'SDTV', source: 'television', resolution: 480 },
+  { id: 12, name: 'WEBRip-480p', source: 'webRip', resolution: 480 },
+  { id: 8, name: 'WEBDL-480p', source: 'web', resolution: 480 },
   { id: 2, name: 'DVD', source: 'dvd', resolution: 480 },
-  { id: 3, name: 'WEBDL-1080p', source: 'web', resolution: 1080 },
+  { id: 13, name: 'Bluray-480p', source: 'bluray', resolution: 480 },
   { id: 4, name: 'HDTV-720p', source: 'television', resolution: 720 },
+  { id: 14, name: 'WEBRip-720p', source: 'webRip', resolution: 720 },
   { id: 5, name: 'WEBDL-720p', source: 'web', resolution: 720 },
   { id: 6, name: 'Bluray-720p', source: 'bluray', resolution: 720 },
-  { id: 7, name: 'Bluray-1080p', source: 'bluray', resolution: 1080 },
-  { id: 8, name: 'WEBDL-480p', source: 'web', resolution: 480 },
   { id: 9, name: 'HDTV-1080p', source: 'television', resolution: 1080 },
   { id: 10, name: 'Raw-HD', source: 'blurayRaw', resolution: 1080 },
-  { id: 12, name: 'WEBRip-480p', source: 'webRip', resolution: 480 },
-  { id: 13, name: 'Bluray-480p', source: 'bluray', resolution: 480 },
-  { id: 14, name: 'WEBRip-720p', source: 'webRip', resolution: 720 },
   { id: 15, name: 'WEBRip-1080p', source: 'webRip', resolution: 1080 },
+  { id: 3, name: 'WEBDL-1080p', source: 'web', resolution: 1080 },
+  { id: 7, name: 'Bluray-1080p', source: 'bluray', resolution: 1080 },
+  { id: 20, name: 'Bluray-1080p Remux', source: 'bluray', resolution: 1080 },
   { id: 16, name: 'HDTV-2160p', source: 'television', resolution: 2160 },
   { id: 17, name: 'WEBRip-2160p', source: 'webRip', resolution: 2160 },
   { id: 18, name: 'WEBDL-2160p', source: 'web', resolution: 2160 },
   { id: 19, name: 'Bluray-2160p', source: 'bluray', resolution: 2160 },
-  { id: 20, name: 'Bluray-1080p Remux', source: 'bluray', resolution: 1080 },
   { id: 21, name: 'Bluray-2160p Remux', source: 'bluray', resolution: 2160 },
 ];
 

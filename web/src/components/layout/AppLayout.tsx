@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { ToastProvider } from '../ui/Toast';
 import { Sidebar } from './Sidebar';
@@ -52,6 +52,16 @@ export function AppLayout() {
   useEffect(() => {
     const title = titleForPath(pathname);
     document.title = title ? `${title} - Sonarr` : 'Sonarr';
+  }, [pathname]);
+
+  // Move focus to the main region after client-side navigation (not on first render).
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    document.getElementById('main')?.focus({ preventScroll: true });
   }, [pathname]);
 
   return (
