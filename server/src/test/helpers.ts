@@ -17,7 +17,7 @@ export interface TestApp {
 export async function createTestApp(opts: { metadataProvider?: MetadataProvider } = {}): Promise<TestApp> {
   const metadata = opts.metadataProvider ?? new FakeMetadataProvider();
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sonarr-test-'));
-  const app = await buildApp({ dataDir, metadataProvider: metadata });
+  const app = await buildApp({ dataDir, metadataProvider: metadata, scheduler: false });
   return {
     app,
     apiKey: getHostConfig(app.db).apiKey,

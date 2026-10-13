@@ -164,3 +164,81 @@ export const episodes = sqliteTable(
     index('episodes_file_idx').on(t.episodeFileId),
   ],
 );
+
+export const indexers = sqliteTable('indexers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  implementation: text('implementation').notNull(),
+  settings: text('settings').notNull().default('{}'),
+  enableRss: integer('enable_rss', { mode: 'boolean' }).notNull().default(true),
+  enableAutomaticSearch: integer('enable_automatic_search', { mode: 'boolean' }).notNull().default(true),
+  enableInteractiveSearch: integer('enable_interactive_search', { mode: 'boolean' }).notNull().default(true),
+  priority: integer('priority').notNull().default(25),
+  tags: text('tags').notNull().default('[]'),
+  added: text('added').notNull(),
+});
+
+export const downloadClients = sqliteTable('download_clients', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  implementation: text('implementation').notNull(),
+  protocol: text('protocol').notNull(),
+  enable: integer('enable', { mode: 'boolean' }).notNull().default(true),
+  priority: integer('priority').notNull().default(1),
+  removeCompletedDownloads: integer('remove_completed_downloads', { mode: 'boolean' }).notNull().default(true),
+  removeFailedDownloads: integer('remove_failed_downloads', { mode: 'boolean' }).notNull().default(true),
+  settings: text('settings').notNull().default('{}'),
+  tags: text('tags').notNull().default('[]'),
+});
+
+export const history = sqliteTable(
+  'history',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    seriesId: integer('series_id')
+      .notNull()
+      .references(() => series.id, { onDelete: 'cascade' }),
+    episodeId: integer('episode_id').references(() => episodes.id, { onDelete: 'cascade' }),
+    sourceTitle: text('source_title').notNull(),
+    quality: text('quality').notNull(),
+    date: text('date').notNull(),
+    eventType: text('event_type').notNull(),
+    downloadId: text('download_id'),
+    data: text('data').notNull().default('{}'),
+  },
+  (t) => [
+    index('history_series_idx').on(t.seriesId),
+    index('history_download_id_idx').on(t.downloadId),
+    index('history_date_idx').on(t.date),
+  ],
+);
+
+export const blocklist = sqliteTable(
+  'blocklist',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    seriesId: integer('series_id')
+      .notNull()
+      .references(() => series.id, { onDelete: 'cascade' }),
+    episodeIds: text('episode_ids').notNull().default('[]'),
+    sourceTitle: text('source_title').notNull(),
+    quality: text('quality').notNull(),
+    date: text('date').notNull(),
+    publishedDate: text('published_date'),
+    size: integer('size'),
+    protocol: text('protocol').notNull(),
+    indexer: text('indexer'),
+    message: text('message'),
+    torrentInfoHash: text('torrent_info_hash'),
+  },
+  (t) => [index('blocklist_series_idx').on(t.seriesId)],
+);
+
+export const scheduledTasks = sqliteTable('scheduled_tasks', {
+  name: text('name').primaryKey(),
+  commandName: text('command_name').notNull(),
+  intervalMinutes: integer('interval_minutes').notNull(),
+  lastExecution: text('last_execution'),
+  lastStartTime: text('last_start_time'),
+  nextExecution: text('next_execution').notNull(),
+});

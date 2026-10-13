@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import type { FastifyInstance } from 'fastify';
-import type { AuthenticationMethod, SystemStatus } from '@sonarr/shared';
+import type { AuthenticationMethod, ScheduledTaskResource, SystemStatus } from '@sonarr/shared';
+import { toScheduledTaskResource } from '../services/scheduler.js';
 
 export interface SystemRouteOptions {
   dataDir: string;
@@ -39,5 +40,15 @@ export async function systemRoutes(app: FastifyInstance, opts: SystemRouteOption
       urlBase: opts.getUrlBase(),
       startTime: opts.startTime,
     };
+  });
+
+  app.get('/api/v3/system/task', async (): Promise<ScheduledTaskResource[]> =>
+    app.scheduler.listTasks().map(toScheduledTaskResource),
+  );
+
+  app.get<{ Params: { name: string } }>('/api/v3/system/task/:name', async (req, reply) => {
+    const row = app.scheduler.getTask(req.params.name);
+    if (!row) return reply.code(404).send({ message: 'NotFound' });
+    return toScheduledTaskResource(row);
   });
 }

@@ -12,10 +12,15 @@ import { qualityRoutes } from './routes/quality.js';
 import { rootFolderRoutes } from './routes/rootfolder.js';
 import { seriesRoutes } from './routes/series.js';
 import { readVersion, systemRoutes } from './routes/system.js';
+import { historyRoutes } from './routes/history.js';
+import { blocklistRoutes } from './routes/blocklist.js';
+import { indexerRoutes } from './routes/indexer.js';
+import { downloadClientRoutes } from './routes/downloadclient.js';
 import { tagRoutes } from './routes/tag.js';
 import { episodeRoutes } from './routes/episode.js';
 import { episodeFileRoutes } from './routes/episodefile.js';
 import { AuthService } from './services/auth.js';
+import { Scheduler, DEFAULT_TASKS } from './services/scheduler.js';
 import { CommandQueue } from './services/commands.js';
 import { registerRescanCommand } from './services/diskScan.js';
 import { EventBus } from './services/events.js';
@@ -32,6 +37,7 @@ declare module 'fastify' {
     dataDir: string;
     events: EventBus;
     commands: CommandQueue;
+    scheduler: Scheduler;
     auth: AuthService;
     metadata: MetadataProvider;
     /** Applies an update to the host config, persists it, refreshes the auth cache and publishes an event. */
@@ -43,6 +49,8 @@ export interface BuildAppOptions {
   dataDir: string;
   logger?: boolean;
   metadataProvider?: MetadataProvider;
+  /** Starts the periodic task timer (default true). Tests disable it and call tick() directly. */
+  scheduler?: boolean;
 }
 
 export { ensureHostConfig, getHostConfig };
@@ -71,7 +79,7 @@ export function redactUrl(url: unknown): unknown {
 
 const isPing = (url: string) => url === '/ping' || url.startsWith('/ping?');
 
-export async function buildApp({ dataDir, logger = false, metadataProvider }: BuildAppOptions): Promise<FastifyInstance> {
+export async function buildApp({ dataDir, logger = false, metadataProvider, scheduler: runScheduler = true }: BuildAppOptions): Promise<FastifyInstance> {
   const dir = resolveDataDir(dataDir);
   const startTime = new Date().toISOString();
   const { sqlite, db } = openDb(dir);
@@ -112,7 +120,11 @@ export async function buildApp({ dataDir, logger = false, metadataProvider }: Bu
   app.decorate('commands', commands);
   registerRefreshCommand(app);
   registerRescanCommand(app);
+  const scheduler = new Scheduler(app);
+  app.decorate('scheduler', scheduler);
+  for (const t of DEFAULT_TASKS) scheduler.ensureTask(t.name, t.commandName, t.intervalMinutes);
   app.addHook('onClose', async () => {
+    scheduler.stop();
     await commands.close();
     sqlite.close();
   });
@@ -173,8 +185,13 @@ export async function buildApp({ dataDir, logger = false, metadataProvider }: Bu
   await app.register(configRoutes);
   await app.register(commandRoutes);
   await app.register(eventRoutes);
+  await app.register(historyRoutes);
+  await app.register(blocklistRoutes);
+  await app.register(indexerRoutes);
+  await app.register(downloadClientRoutes);
 
   commands.start();
+  if (runScheduler) scheduler.start();
   await app.ready();
   return app;
 }
