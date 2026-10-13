@@ -1,11 +1,10 @@
-import { randomBytes } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { eq } from 'drizzle-orm';
 import { ZodError } from 'zod';
 import type { HostConfig } from '@sonarr/shared';
 import { resolveDataDir } from './config.js';
-import { openDb, schema, type Db } from './db/index.js';
+import { openDb, type Db } from './db/index.js';
 import { registerAuth } from './plugins/auth.js';
+import { authRoutes } from './routes/auth.js';
 import { commandRoutes } from './routes/command.js';
 import { configRoutes } from './routes/config.js';
 import { eventRoutes } from './routes/events.js';
@@ -13,8 +12,10 @@ import { qualityRoutes } from './routes/quality.js';
 import { rootFolderRoutes } from './routes/rootfolder.js';
 import { readVersion, systemRoutes } from './routes/system.js';
 import { tagRoutes } from './routes/tag.js';
+import { AuthService } from './services/auth.js';
 import { CommandQueue } from './services/commands.js';
 import { EventBus } from './services/events.js';
+import { ensureHostConfig, getHostConfig, saveHostConfig } from './services/hostConfig.js';
 import { seed } from './services/seed.js';
 
 declare module 'fastify' {
@@ -24,6 +25,9 @@ declare module 'fastify' {
     dataDir: string;
     events: EventBus;
     commands: CommandQueue;
+    auth: AuthService;
+    /** Applies an update to the host config, persists it, refreshes the auth cache and publishes an event. */
+    updateHostConfig: (update: (host: HostConfig) => HostConfig) => HostConfig;
   }
 }
 
@@ -32,36 +36,63 @@ export interface BuildAppOptions {
   logger?: boolean;
 }
 
-export function ensureHostConfig(db: Db): HostConfig {
-  const row = db.select().from(schema.config).where(eq(schema.config.key, 'host')).get();
-  if (row) return JSON.parse(row.value) as HostConfig;
-  const host: HostConfig = {
-    id: 1,
-    bindAddress: '*',
-    port: 8989,
-    urlBase: '',
-    instanceName: 'Sonarr',
-    apiKey: randomBytes(16).toString('hex'),
-    logLevel: 'info',
-    launchBrowser: false,
-  };
-  db.insert(schema.config).values({ key: 'host', value: JSON.stringify(host) }).run();
-  return host;
+export { ensureHostConfig, getHostConfig };
+
+/** Requests outside the URL base are rewritten here; no route serves it, so they 404. */
+export const OUTSIDE_URL_BASE = '/__outside_url_base__';
+
+/**
+ * Strips a normalized URL base from a request URL: '/base' and '/base/' map to '/', '/base?x' to
+ * '/?x' and '/base/a?b' to '/a?b'. Anything else (including '/basement') maps to OUTSIDE_URL_BASE.
+ */
+export function stripUrlBase(url: string, base: string): string {
+  if (!base) return url;
+  if (url !== base && !url.startsWith(`${base}/`) && !url.startsWith(`${base}?`)) return OUTSIDE_URL_BASE;
+  const rest = url.slice(base.length);
+  if (rest === '') return '/';
+  return rest.startsWith('?') ? `/${rest}` : rest;
 }
 
-export function getHostConfig(db: Db): HostConfig {
-  return ensureHostConfig(db);
+/** Hides the API key in logged URLs. */
+export function redactUrl(url: string): string;
+export function redactUrl(url: unknown): unknown;
+export function redactUrl(url: unknown): unknown {
+  return typeof url === 'string' ? url.replace(/([?&]apikey=)[^&#]*/gi, '$1***') : url;
 }
+
+const isPing = (url: string) => url === '/ping' || url.startsWith('/ping?');
 
 export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Promise<FastifyInstance> {
   const dir = resolveDataDir(dataDir);
   const startTime = new Date().toISOString();
-  const app = Fastify({ logger });
   const { sqlite, db } = openDb(dir);
+  // The URL base is read once at build time; changing it needs a restart.
+  const urlBase = ensureHostConfig(db).urlBase;
+  const app = Fastify({
+    logger: logger
+      ? {
+          serializers: {
+            req: (req) => ({
+              method: req.method,
+              url: redactUrl(String(req.url)),
+              host: req.host,
+              remoteAddress: req.ip,
+              remotePort: req.socket?.remotePort,
+            }),
+            url: (url: unknown) => redactUrl(url),
+            originalUrl: (url: unknown) => redactUrl(url),
+          },
+        }
+      : false,
+    rewriteUrl: (req) => {
+      const url = req.url ?? '/';
+      // /ping is served at the root as well as under the base (health checks).
+      return urlBase && isPing(url) ? url : stripUrlBase(url, urlBase);
+    },
+  });
   app.decorate('db', db);
   app.decorate('sqlite', sqlite);
   app.decorate('dataDir', dir);
-  ensureHostConfig(db);
   seed(db);
 
   const events = new EventBus();
@@ -72,6 +103,16 @@ export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Pr
   app.addHook('onClose', async () => {
     await commands.close();
     sqlite.close();
+  });
+
+  const auth = new AuthService(db);
+  app.decorate('auth', auth);
+  app.decorate('updateHostConfig', (update: (host: HostConfig) => HostConfig): HostConfig => {
+    const next: HostConfig = { ...update(getHostConfig(db)), id: 1, password: '' };
+    saveHostConfig(db, next);
+    auth.invalidate();
+    events.publish('hostconfig', 'updated', { ...next, apiKey: undefined, password: undefined });
+    return next;
   });
 
   app.setErrorHandler((error, request, reply) => {
@@ -89,26 +130,17 @@ export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Pr
     if (status >= 500) request.log.error(error);
     return reply.code(status).send({ message: status >= 500 ? 'Internal Server Error' : err.message });
   });
+  // Same body as the routes' own 404s; never echoes the (possibly rewritten) path.
+  app.setNotFoundHandler((_request, reply) => reply.code(404).send({ message: 'NotFound' }));
 
-  registerAuth(app, () => getHostConfig(db).apiKey);
+  registerAuth(app, auth);
 
   app.get('/ping', async () => ({ status: 'OK' }));
-  // The bootstrap endpoint is unauthenticated, so the API key is only disclosed to
-  // direct loopback clients (the local UI). This gate is best-effort: requests carrying
-  // proxy headers are treated as remote, so a same-host reverse proxy never leaks the key.
-  // Remote callers get the public fields only and must supply the key themselves.
-  const isLoopback = (ip: string) =>
-    ip === '::1' || ip === '127.0.0.1' || ip.startsWith('::ffff:127.') || ip.startsWith('127.');
-  const PROXY_HEADERS = ['x-forwarded-for', 'forwarded', 'x-real-ip', 'x-forwarded-host', 'x-forwarded-proto'];
-  app.get('/initialize.json', async (request) => {
-    const host = getHostConfig(db);
-    const proxied = PROXY_HEADERS.some((h) => request.headers[h] !== undefined);
-    return {
-      apiKey: isLoopback(request.ip) && !proxied ? host.apiKey : '',
-      urlBase: host.urlBase,
-      instanceName: host.instanceName,
-      version: readVersion(),
-    };
+
+  await app.register(authRoutes, {
+    auth,
+    version: readVersion(),
+    getInstanceName: () => getHostConfig(db).instanceName,
   });
 
   await app.register(systemRoutes, {
@@ -117,6 +149,7 @@ export async function buildApp({ dataDir, logger = false }: BuildAppOptions): Pr
     startTime,
     getInstanceName: () => getHostConfig(db).instanceName,
     getUrlBase: () => getHostConfig(db).urlBase,
+    getAuthMethod: () => auth.settings().method,
   });
 
   await app.register(rootFolderRoutes);

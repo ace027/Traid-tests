@@ -1,9 +1,13 @@
 /** Shape returned by GET /initialize.json (unauthenticated bootstrap for the UI). */
 export interface InitializeConfig {
+  /** Non-empty only when the request was authorized (session, external auth or local bypass). */
   apiKey: string;
   urlBase: string;
   instanceName: string;
   version: string;
+  authMethod: 'forms' | 'external';
+  setupRequired: boolean;
+  authenticated: boolean;
 }
 
 export interface ApiValidationError {
@@ -31,18 +35,38 @@ export class ApiError extends Error {
 
 let initializePromise: Promise<InitializeConfig> | null = null;
 
-/** Loads /initialize.json once and caches it. A failed load is not cached. */
+/**
+ * URL base the page was served under, from `<base href>` (document.baseURI). Without a
+ * <base> element the app is assumed to live at the root.
+ */
+export function detectUrlBase(): string {
+  if (typeof document === 'undefined' || !document.querySelector('base[href]')) return '';
+  try {
+    return normalizeUrlBase(new URL(document.baseURI).pathname);
+  } catch {
+    return '';
+  }
+}
+
+/** Loads initialize.json once and caches it. A failed load is not cached. */
 export function loadInitialize(): Promise<InitializeConfig> {
   if (!initializePromise) {
     initializePromise = (async () => {
-      const res = await fetch('/initialize.json', { headers: { Accept: 'application/json' } });
+      const res = await fetch(`${detectUrlBase()}/initialize.json`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+      });
       if (!res.ok) throw new ApiError(res.status, `Failed to load initialize.json (${res.status})`);
       const data = (await res.json()) as Partial<InitializeConfig>;
+      const apiKey = data.apiKey ?? '';
       return {
-        apiKey: data.apiKey ?? '',
+        apiKey,
         urlBase: normalizeUrlBase(data.urlBase ?? ''),
         instanceName: data.instanceName ?? 'Sonarr',
         version: data.version ?? '',
+        authMethod: data.authMethod === 'external' ? 'external' : 'forms',
+        setupRequired: data.setupRequired === true,
+        authenticated: data.authenticated ?? Boolean(apiKey),
       };
     })();
     initializePromise.catch(() => {
@@ -52,7 +76,7 @@ export function loadInitialize(): Promise<InitializeConfig> {
   return initializePromise;
 }
 
-/** Clears the cached initialize.json (tests, or after the API key is regenerated). */
+/** Clears the cached initialize.json (tests, after login/logout, or after the API key is regenerated). */
 export function resetInitializeCache(): void {
   initializePromise = null;
 }
@@ -61,6 +85,14 @@ function normalizeUrlBase(urlBase: string): string {
   const trimmed = urlBase.trim().replace(/\/+$/, '');
   if (!trimmed) return '';
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
+/** Sends the browser to the login page (full navigation so all state is dropped). */
+export function redirectToLogin(urlBase: string): void {
+  if (typeof window === 'undefined') return;
+  const target = `${urlBase}/login`;
+  if (window.location.pathname === target) return;
+  window.location.assign(target);
 }
 
 export type QueryValue = string | number | boolean | null | undefined;
@@ -108,9 +140,12 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
   const { apiKey, urlBase } = await loadInitialize();
   const headers: Record<string, string> = {
     Accept: 'application/json',
-    'X-Api-Key': apiKey,
+    // Marks the request as script-originated; the server requires it (or JSON) for cookie-auth writes.
+    'X-Requested-With': 'XMLHttpRequest',
     ...init.headers,
   };
+  // Without a key the session cookie authenticates the request.
+  if (apiKey) headers['X-Api-Key'] = apiKey;
   const hasBody = init.body !== undefined;
   if (hasBody) headers['Content-Type'] = 'application/json';
 
@@ -119,9 +154,14 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
     headers,
     body: hasBody ? JSON.stringify(init.body) : undefined,
     signal: init.signal,
+    credentials: 'same-origin',
   });
 
   const data = await readBody(res);
+  if (res.status === 401) {
+    resetInitializeCache();
+    redirectToLogin(urlBase);
+  }
   if (!res.ok) {
     const payload = (data && typeof data === 'object' ? data : {}) as {
       message?: unknown;
@@ -142,6 +182,44 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
   }
   return data as T;
 }
+
+function errorFrom(res: Response, data: unknown): ApiError {
+  const payload = (data && typeof data === 'object' ? data : {}) as { message?: unknown; errors?: unknown };
+  const message = typeof payload.message === 'string' && payload.message ? payload.message : res.statusText || `Request failed with status ${res.status}`;
+  const errors = Array.isArray(payload.errors)
+    ? (payload.errors as ApiValidationError[]).filter((e) => e && typeof e.errorMessage === 'string')
+    : [];
+  return new ApiError(res.status, message, errors);
+}
+
+/** POSTs JSON to an auth endpoint below the URL base. Never redirects on 401. */
+async function authPost(path: string, body?: unknown): Promise<void> {
+  const { urlBase } = await loadInitialize().catch(() => ({ urlBase: detectUrlBase() }));
+  const res = await fetch(`${urlBase}${path}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    body: JSON.stringify(body ?? {}),
+    credentials: 'same-origin',
+  });
+  const data = await readBody(res);
+  resetInitializeCache();
+  if (!res.ok) throw errorFrom(res, data);
+}
+
+export interface LoginInput {
+  username: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+/** Logs in with forms credentials; the server sets the session cookie. Throws ApiError (401, 429). */
+export const login = (input: LoginInput) => authPost('/login', input);
+
+/** Ends the session and clears the cookie. */
+export const logout = () => authPost('/logout');
+
+/** First-run setup: stores the credentials and logs the caller in. Throws ApiError (400, 409). */
+export const setup = (input: { username: string; password: string }) => authPost('/initialize/setup', input);
 
 type Opts = Omit<ApiFetchInit, 'method' | 'body'>;
 

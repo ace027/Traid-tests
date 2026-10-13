@@ -19,4 +19,25 @@ Self-hosted TV series PVR built with TypeScript (Fastify + SQLite + React/Vite/T
 - `SONARR_DATA` data directory (default `./data`)
 - `SONARR_PORT` port (default `8989`)
 
-The API key is generated on first run and accepted via the `X-Api-Key` header or `apikey` query parameter.
+The API key is generated on first run. Send it in the `X-Api-Key` header. The `apikey` query parameter is accepted only on `/api/v3/events` (EventSource cannot set headers) and `/feed/*`, and it is redacted from logs.
+
+## Authentication
+The model follows Sonarr v4:
+
+- **Forms** (default): on first run the UI asks you to create a username and password (`POST /initialize/setup`, minimum 6 characters; it returns 409 once a password exists). Until then every `/api` call needs the API key. Signing in (`POST /login`) sets an `HttpOnly`, `SameSite=Strict` `SonarrAuth` cookie scoped to the URL base. It lasts 12 hours, or 30 days with "Remember me". `POST /logout` revokes it. Passwords are stored as scrypt hashes, and the session table stores only a SHA-256 of each token. Changing the username or password signs out every other session.
+- **External**: a reverse proxy in front of Sonarr handles authentication, and Sonarr requires no login. Use this only when nothing can reach Sonarr except through that proxy.
+- **Authentication required**: `enabled` (default) or `disabledForLocalAddresses`. The second skips the login for peers on loopback, 10/8, 172.16/12, 192.168/16, 169.254/16, ::1, fc00::/7 and fe80::/10. A request carrying `X-Forwarded-For`, `Forwarded`, `X-Real-IP`, `X-Forwarded-Host` or `X-Forwarded-Proto` is never treated as local. The bypass stays off until a password has been set.
+
+`/api` and `/feed` accept the API key, a session cookie, or one of the bypasses above. `GET /initialize.json` is public and returns the API key only to a caller that is already authorized. State-changing requests that are not authorized by the API key must send `Content-Type: application/json` or an `X-Requested-With` header (CSRF protection). The web client does this.
+
+**Reverse-proxy caveats**
+- With `disabledForLocalAddresses` behind a proxy on the same host, the proxy **must** send `X-Forwarded-For` (or another header listed above). Otherwise every proxied visitor arrives from 127.0.0.1 and skips the login. If you cannot guarantee the header, use `enabled`.
+- Sonarr does not trust proxy headers for client addresses (`trustProxy` is off). The failed-login limit (5 failures per IP per 5 minutes, then HTTP 429) therefore counts the proxy's address. Behind a proxy, 5 bad attempts from anyone lock out every user for up to 5 minutes. Add rate limiting at the proxy if that matters.
+
+## URL base
+Set **URL base** (Settings > General) to serve Sonarr under a sub-path such as `/sonarr`. It is normalized: leading `/`, no trailing `/`, only `A-Z a-z 0-9 . _ ~ / -`. It is read at startup, so a change needs a restart. With a base set:
+- `/sonarr`, `/sonarr/` and `/sonarr/...` are served.
+- Everything outside the base (including `/sonarrx`) returns `404 {"message":"NotFound"}`.
+- `/ping` answers both at the root and under the base, for health checks.
+
+The server does not yet serve the built web UI. When you host `web/dist` under a URL base, add `<base href="/sonarr/">` to its `index.html`. The client derives its URL base from `<base href>` to find `initialize.json`, and assumes the root without one.

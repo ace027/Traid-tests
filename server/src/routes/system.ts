@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import type { FastifyInstance } from 'fastify';
-import type { SystemStatus } from '@sonarr/shared';
+import type { AuthenticationMethod, SystemStatus } from '@sonarr/shared';
 
 export interface SystemRouteOptions {
   dataDir: string;
@@ -9,6 +9,7 @@ export interface SystemRouteOptions {
   startTime: string;
   getInstanceName: () => string;
   getUrlBase: () => string;
+  getAuthMethod: () => AuthenticationMethod;
 }
 
 export function readVersion(): string {
@@ -34,7 +35,7 @@ export async function systemRoutes(app: FastifyInstance, opts: SystemRouteOption
       runtimeVersion: process.versions.node,
       databaseType: 'sqlite',
       databaseVersion: row.v,
-      authentication: 'none',
+      authentication: opts.getAuthMethod(),
       urlBase: opts.getUrlBase(),
       startTime: opts.startTime,
     };

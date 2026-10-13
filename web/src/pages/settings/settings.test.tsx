@@ -293,6 +293,10 @@ describe('General', () => {
     apiKey: 'abc123',
     logLevel: 'info',
     launchBrowser: false,
+    authenticationMethod: 'forms',
+    authenticationRequired: 'enabled',
+    username: 'admin',
+    password: '',
   });
 
   it('shows the API key and regenerates it through the reset endpoint', async () => {
@@ -332,7 +336,40 @@ describe('General', () => {
     await user.click(save);
     await waitFor(() => expect(api.callsTo('PUT', 'config/host')).toHaveLength(1));
     expect(api.callsTo('PUT', 'config/host')[0].body).toMatchObject({ instanceName: 'Home', port: 8989 });
+    expect(api.callsTo('PUT', 'config/host')[0].body).not.toHaveProperty('password');
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled());
+  });
+
+  it('edits the authentication settings and sends a new password only when entered', async () => {
+    let current = host();
+    api = mockApi({
+      'GET config/host': () => current,
+      'PUT config/host': (req) => (current = { ...current, ...(req.body as object), password: '' }),
+    });
+    const user = userEvent.setup();
+    const { container } = renderPage(<General />);
+    const method = await screen.findByLabelText('Authentication');
+    expect(method).toHaveValue('forms');
+    expect(screen.getByLabelText('Username')).toHaveValue('admin');
+    const password = screen.getByLabelText('Password');
+    expect(password).toHaveValue('');
+    expect(password).toHaveAttribute('type', 'password');
+    expect((await axe(container)).violations).toEqual([]);
+
+    await user.type(password, 'abc');
+    expect(screen.getByText('Password must be at least 6 characters')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await user.type(password, 'def');
+    await user.selectOptions(screen.getByLabelText('Authentication required'), 'disabledForLocalAddresses');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(api.callsTo('PUT', 'config/host')).toHaveLength(1));
+    expect(api.callsTo('PUT', 'config/host')[0].body).toMatchObject({
+      password: 'abcdef',
+      authenticationRequired: 'disabledForLocalAddresses',
+      authenticationMethod: 'forms',
+      username: 'admin',
+    });
+    await waitFor(() => expect(screen.getByLabelText('Password')).toHaveValue(''));
   });
 });
 

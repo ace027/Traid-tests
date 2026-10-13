@@ -1,34 +1,39 @@
 import { buildApp, getHostConfig } from './app.js';
-import { loadConfig } from './config.js';
+import { loadConfig, resolveListenOptions } from './config.js';
+
+const SHUTDOWN_TIMEOUT_MS = 10_000;
 
 const config = loadConfig();
 const app = await buildApp({ dataDir: config.dataDir, logger: true });
 const host = getHostConfig(app.db);
-const address = host.bindAddress === '*' ? '0.0.0.0' : host.bindAddress;
+const listen = resolveListenOptions(host);
 
-// SONARR_PORT, when set, overrides the persisted port setting.
-const port = process.env.SONARR_PORT ? config.port : host.port;
-
-// Honour the persisted URL base by stripping it before routing.
-const urlBase = host.urlBase.replace(/\/+$/, '');
-if (urlBase) {
-  app.server.prependListener('request', (req) => {
-    const url = req.url ?? '';
-    if (url === urlBase || url.startsWith(`${urlBase}/`) || url.startsWith(`${urlBase}?`)) {
-      req.url = '/' + url.slice(urlBase.length).replace(/^\/+/, '');
-    } else {
-      // Outside the base: route to a path no handler serves, so it 404s.
-      req.url = '/__outside_url_base__';
-    }
-  });
+try {
+  await app.listen(listen);
+  app.log.info(`Sonarr listening on http://${listen.host}:${listen.port}${host.urlBase}`);
+} catch (err) {
+  app.log.error(err, 'Failed to start the server');
+  await app.close().catch(() => {});
+  process.exit(1);
 }
 
-await app.listen({ host: address, port });
-app.log.info(`Sonarr listening on http://${address}:${port}${urlBase}`);
-
-const shutdown = async () => {
-  await app.close();
-  process.exit(0);
+let shuttingDown = false;
+const shutdown = async (signal: string) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  app.log.info(`${signal} received, shutting down`);
+  const timer = setTimeout(() => {
+    app.log.error('Shutdown timed out, forcing exit');
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+  timer.unref();
+  try {
+    await app.close();
+    process.exit(0);
+  } catch (err) {
+    app.log.error(err, 'Error during shutdown');
+    process.exit(1);
+  }
 };
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => void shutdown('SIGTERM'));

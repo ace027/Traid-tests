@@ -34,10 +34,16 @@ describe('config/host', () => {
     for (const port of [0, 65536, 1.5, 'x']) {
       expect((await req('PUT', '/api/v3/config/host', { ...h, port })).statusCode, String(port)).toBe(400);
     }
-    const res = await req('PUT', '/api/v3/config/host', { ...h, urlBase: 'sonarr' });
-    expect(res.statusCode).toBe(400);
-    expect(res.json().errors[0].propertyName).toBe('urlBase');
-    expect((await req('PUT', '/api/v3/config/host', { ...h, urlBase: '' })).statusCode).toBe(200);
+    for (const urlBase of ['/so narr', '/a?b', '/a#b', '/../x', '/sonarr/%2e']) {
+      const res = await req('PUT', '/api/v3/config/host', { ...h, urlBase });
+      expect(res.statusCode, urlBase).toBe(400);
+      expect(res.json().errors[0].propertyName).toBe('urlBase');
+    }
+    for (const [input, stored] of [['sonarr', '/sonarr'], ['/sonarr/', '/sonarr'], ['  ', ''], ['//a//b/', '/a/b'], ['', '']]) {
+      const res = await req('PUT', '/api/v3/config/host', { ...h, urlBase: input });
+      expect(res.statusCode, input).toBe(200);
+      expect(res.json().urlBase).toBe(stored);
+    }
   });
 
   it('resets the api key and takes effect immediately', async () => {

@@ -19,15 +19,14 @@ describe('server core', () => {
     expect(res.json()).toEqual({ status: 'OK' });
   });
 
-  it('GET /initialize.json gives the key to loopback clients only', async () => {
+  it('GET /initialize.json never gives the key to unauthenticated clients', async () => {
     t = await createTestApp();
-    const local = await t.app.inject({ url: '/initialize.json', remoteAddress: '127.0.0.1' });
-    expect(local.statusCode).toBe(200);
-    expect(local.json().apiKey).toBe(t.apiKey);
-    const remote = await t.app.inject({ url: '/initialize.json', remoteAddress: '203.0.113.5' });
-    expect(remote.statusCode).toBe(200);
-    expect(remote.json().apiKey).toBe('');
-    expect(remote.body).not.toContain(t.apiKey);
+    for (const remoteAddress of ['127.0.0.1', '203.0.113.5', '172.17.0.1', '192.168.1.20']) {
+      const res = await t.app.inject({ url: '/initialize.json', remoteAddress });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toMatchObject({ apiKey: '', authenticated: false, authMethod: 'forms', setupRequired: true });
+      expect(res.body).not.toContain(t.apiKey);
+    }
     for (const headers of [
       { 'x-forwarded-for': '198.51.100.7' },
       { forwarded: 'for=198.51.100.7' },
@@ -37,6 +36,8 @@ describe('server core', () => {
       expect(proxied.statusCode).toBe(200);
       expect(proxied.json().apiKey).toBe('');
     }
+    const withKey = await t.app.inject({ url: '/initialize.json', headers: { 'x-api-key': t.apiKey } });
+    expect(withKey.json()).toMatchObject({ apiKey: t.apiKey, authenticated: true });
   });
 
   it('generates a 32 char hex api key', async () => {
@@ -56,21 +57,23 @@ describe('server core', () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it('accepts the key by header and query', async () => {
+  it('accepts the key by header only on regular API routes', async () => {
     t = await createTestApp();
     const url = '/api/v3/system/status';
     const a = await t.app.inject({ url, headers: { 'x-api-key': t.apiKey } });
     expect(a.statusCode).toBe(200);
     expect(a.json().appName).toBe('Sonarr');
     expect(a.json().version).toMatch(/^\d+\.\d+\.\d+/);
+    expect(a.json().appData).toBe(t.dataDir);
+    expect(a.json().authentication).toBe('forms');
     const b = await t.app.inject({ url: `${url}?apikey=${t.apiKey}` });
-    expect(b.statusCode).toBe(200);
+    expect(b.statusCode).toBe(401);
   });
 
   it('records each migration once', async () => {
     t = await createTestApp();
     const rows = t.app.sqlite.prepare('select version from schema_migrations').all();
-    expect(rows).toEqual([{ version: '0001_initial' }]);
+    expect(rows).toEqual([{ version: '0001_initial' }, { version: '0002_auth' }]);
   });
 
   it('keeps the api key across restarts and creates a missing data dir', async () => {
@@ -83,7 +86,7 @@ describe('server core', () => {
       const b = await buildApp({ dataDir: dir });
       expect(getHostConfig(b.db).apiKey).toBe(key);
       const rows = b.sqlite.prepare('select count(*) as n from schema_migrations').get();
-      expect(rows).toEqual({ n: 1 });
+      expect(rows).toEqual({ n: 2 });
       await b.close();
     } finally {
       fs.rmSync(base, { recursive: true, force: true });

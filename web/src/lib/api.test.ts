@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { ApiError, apiFetch, buildApiUrl, del, post, queryKeys, resetInitializeCache } from './api';
+import { ApiError, apiFetch, buildApiUrl, del, login, post, queryKeys, resetInitializeCache } from './api';
 import { backoffDelay, getConnectionStatus, startEventStream } from './events';
 
 const init = { apiKey: 'abc123', urlBase: '/sonarr', instanceName: 'Sonarr', version: '1.0.0' };
@@ -93,6 +93,48 @@ describe('apiFetch', () => {
     await expect(apiFetch('boom')).rejects.toMatchObject({ status: 500, message: 'Internal Server Error', errors: [] });
   });
 
+  it('sends cookies same-origin and omits X-Api-Key when initialize gives no key', async () => {
+    const fn = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      if (String(input) === '/initialize.json') return json({ ...init, apiKey: '', authenticated: true });
+      return json([]);
+    });
+    vi.stubGlobal('fetch', fn);
+    await apiFetch('tag');
+    const [initUrl, initReq] = fn.mock.calls[0]!;
+    expect(initUrl).toBe('/initialize.json');
+    expect(initReq!.credentials).toBe('same-origin');
+    const [, reqInit] = fn.mock.calls[1]!;
+    expect(reqInit!.credentials).toBe('same-origin');
+    const headers = reqInit!.headers as Record<string, string>;
+    expect(headers['X-Api-Key']).toBeUndefined();
+    expect(headers['X-Requested-With']).toBe('XMLHttpRequest');
+  });
+
+  it('on 401 resets the initialize cache and navigates to the login page', async () => {
+    const assign = vi.fn();
+    vi.stubGlobal('location', { ...window.location, pathname: '/sonarr/settings', assign });
+    const fetchMock = mockFetch(() => json({ message: 'Unauthorized' }, 401));
+    await expect(apiFetch('tag')).rejects.toMatchObject({ status: 401 });
+    expect(assign).toHaveBeenCalledWith('/sonarr/login');
+    await expect(apiFetch('tag')).rejects.toMatchObject({ status: 401 });
+    expect(fetchMock.mock.calls.filter(([u]) => u === '/initialize.json')).toHaveLength(2);
+  });
+
+  it('login() posts JSON below the URL base and throws ApiError without redirecting', async () => {
+    const assign = vi.fn();
+    vi.stubGlobal('location', { ...window.location, assign });
+    const fetchMock = mockFetch(() => json({ message: 'Invalid username or password' }, 401));
+    const err = await login({ username: 'a', password: 'b', rememberMe: true }).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(401);
+    expect(assign).not.toHaveBeenCalled();
+    const [url, reqInit] = fetchMock.mock.calls[1]!;
+    expect(url).toBe('/sonarr/login');
+    expect(reqInit!.method).toBe('POST');
+    expect(JSON.parse(String(reqInit!.body))).toEqual({ username: 'a', password: 'b', rememberMe: true });
+    expect((reqInit!.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+  });
+
   it('builds query strings and skips empty values', () => {
     expect(buildApiUrl('', '/command', { page: 2, sort: undefined, desc: true })).toBe('/api/v3/command?page=2&desc=true');
   });
@@ -165,6 +207,15 @@ describe('startEventStream', () => {
     stop();
     expect(es.closed).toBe(true);
     expect(getConnectionStatus()).toBe('disconnected');
+  });
+
+  it('relies on the session cookie when initialize gives no key', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({ ...init, apiKey: '' })));
+    vi.stubGlobal('EventSource', FakeEventSource);
+    const stop = startEventStream(new QueryClient());
+    await vi.waitFor(() => expect(FakeEventSource.instances).toHaveLength(1));
+    expect(FakeEventSource.instances[0].url).toBe('/sonarr/api/v3/events');
+    stop();
   });
 
   it('reconnects with exponential backoff after the stream closes and resyncs', async () => {

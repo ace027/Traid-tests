@@ -11,6 +11,7 @@
 ```
 
 ## Recent Decisions
+- Quick task (2026-10-13): Sonarr v4-style auth (forms login + sessions, Authentication Required enabled/disabledForLocalAddresses, external), initialize.json gives the API key only to authorized callers, URL base moved into buildApp — resolves review findings F-002/F-008/F-009
 - Assumed: TypeScript full stack (Fastify + SQLite/Drizzle + React/Vite/Tailwind) instead of Sonarr's C#/.NET + React
 - Assumed: TVmaze as the metadata provider
 - Assumed: 'exact replica functionality-wise' covers Sonarr's core workflow (library, indexers, decision engine, download clients, import/rename, activity, wanted, calendar, notifications, system); long-tail providers are out of scope

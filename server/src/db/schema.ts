@@ -49,3 +49,16 @@ export const commands = sqliteTable(
   },
   (t) => [index('commands_status_idx').on(t.status)],
 );
+
+/** Login sessions. Only the sha256 of the cookie token is stored; times are epoch milliseconds. */
+export const sessions = sqliteTable(
+  'sessions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    tokenHash: text('token_hash').notNull().unique(),
+    createdAt: integer('created_at').notNull(),
+    expiresAt: integer('expires_at').notNull(),
+    lastSeenAt: integer('last_seen_at').notNull(),
+  },
+  (t) => [index('sessions_expires_at_idx').on(t.expiresAt)],
+);

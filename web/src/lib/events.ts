@@ -74,7 +74,8 @@ function invalidateAll(queryClient: QueryClient) {
 }
 
 /**
- * Opens the SSE stream at `${urlBase}/api/v3/events?apikey=...` and keeps the
+ * Opens the SSE stream at `${urlBase}/api/v3/events` (with `?apikey=` when initialize.json
+ * provided a key; otherwise the same-origin session cookie authenticates it) and keeps the
  * query cache fresh. Transient drops are retried by EventSource itself (which
  * resends Last-Event-ID so missed events are replayed); if the browser gives
  * up (readyState CLOSED) we reconnect with exponential backoff from 1 s to
@@ -100,7 +101,7 @@ export function startEventStream(queryClient: QueryClient): () => void {
     let url: string;
     try {
       const { apiKey, urlBase } = await loadInitialize();
-      url = `${urlBase}/api/v3/events?apikey=${encodeURIComponent(apiKey)}`;
+      url = apiKey ? `${urlBase}/api/v3/events?apikey=${encodeURIComponent(apiKey)}` : `${urlBase}/api/v3/events`;
     } catch {
       scheduleReconnect();
       return;

@@ -2,9 +2,12 @@ import { useContext, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientContext, QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
+import { AuthGate } from './components/layout/AuthGate';
 import { navigation } from './components/layout/navigation';
 import { Placeholder } from './pages/Placeholder';
 import { NotFound } from './pages/NotFound';
+import { Login } from './pages/Login';
+import { Setup } from './pages/Setup';
 import { SettingsIndex } from './pages/settings/SettingsIndex';
 import { MediaManagement } from './pages/settings/MediaManagement';
 import { Profiles } from './pages/settings/Profiles';
@@ -66,9 +69,16 @@ function sectionRoutes(): RouteObject[] {
 }
 
 export const routes: RouteObject[] = [
+  // Sign-in screens live outside the app shell.
+  { path: '/login', element: <Login /> },
+  { path: '/setup', element: <Setup /> },
   {
     path: '/',
-    element: <AppLayout />,
+    element: (
+      <AuthGate>
+        <AppLayout />
+      </AuthGate>
+    ),
     children: [
       ...sectionRoutes(),
       { path: 'settings', children: settingsRoutes },

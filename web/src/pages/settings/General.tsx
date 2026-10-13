@@ -13,12 +13,30 @@ const LOG_LEVELS = [
   { value: 'error', label: 'Error' },
 ];
 
+const AUTH_METHODS = [
+  { value: 'forms', label: 'Forms (login page)' },
+  { value: 'external', label: 'External (reverse proxy)' },
+];
+
+const AUTH_REQUIRED = [
+  { value: 'enabled', label: 'Enabled' },
+  { value: 'disabledForLocalAddresses', label: 'Disabled for local addresses' },
+];
+
+const MIN_PASSWORD_LENGTH = 6;
+const URL_BASE_CHARS = /^[A-Za-z0-9._~/-]*$/;
+
 interface Draft {
   bindAddress: string;
   port: string;
   urlBase: string;
   instanceName: string;
   logLevel: HostConfig['logLevel'];
+  authenticationMethod: HostConfig['authenticationMethod'];
+  authenticationRequired: HostConfig['authenticationRequired'];
+  username: string;
+  /** Blank keeps the current password. */
+  password: string;
 }
 
 const toDraft = (c: HostConfig): Draft => ({
@@ -27,13 +45,22 @@ const toDraft = (c: HostConfig): Draft => ({
   urlBase: c.urlBase,
   instanceName: c.instanceName,
   logLevel: c.logLevel,
+  authenticationMethod: c.authenticationMethod,
+  authenticationRequired: c.authenticationRequired,
+  username: c.username,
+  password: '',
 });
 
 function GeneralForm({ config }: { config: HostConfig }) {
   const toast = useToast();
   const [draft, setDraft] = useState<Draft>(() => toDraft(config));
   const [confirmReset, setConfirmReset] = useState(false);
-  const save = useUpdateHostConfig({ onSuccess: () => toast.success('General settings saved') });
+  const save = useUpdateHostConfig({
+    onSuccess: () => {
+      setDraft((d) => ({ ...d, password: '' }));
+      toast.success('General settings saved');
+    },
+  });
   const reset = useResetApiKey({
     onSuccess: () => {
       setConfirmReset(false);
@@ -49,8 +76,13 @@ function GeneralForm({ config }: { config: HostConfig }) {
   const clientErrors = {
     bindAddress: draft.bindAddress.trim() ? undefined : 'Bind address is required',
     port: Number.isInteger(port) && port >= 1 && port <= 65535 ? undefined : 'Port must be between 1 and 65535',
-    urlBase: draft.urlBase === '' || draft.urlBase.startsWith('/') ? undefined : "URL base must be empty or start with '/'",
+    urlBase: URL_BASE_CHARS.test(draft.urlBase.trim()) ? undefined : 'URL base may only contain letters, digits and . _ ~ / -',
     instanceName: draft.instanceName.trim() ? undefined : 'Instance name is required',
+    username: draft.authenticationMethod === 'forms' && !draft.username.trim() ? 'Username is required' : undefined,
+    password:
+      draft.password && draft.password.length < MIN_PASSWORD_LENGTH
+        ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters`
+        : undefined,
   };
   const hasClientErrors = Object.values(clientErrors).some(Boolean);
   const serverError = save.error instanceof ApiError ? save.error : null;
@@ -69,6 +101,10 @@ function GeneralForm({ config }: { config: HostConfig }) {
       urlBase: draft.urlBase,
       instanceName: draft.instanceName.trim(),
       logLevel: draft.logLevel,
+      authenticationMethod: draft.authenticationMethod,
+      authenticationRequired: draft.authenticationRequired,
+      username: draft.username.trim(),
+      ...(draft.password ? { password: draft.password } : {}),
     });
   };
 
@@ -101,7 +137,44 @@ function GeneralForm({ config }: { config: HostConfig }) {
           </div>
         </Card>
 
-        <Card title="Security" description="Use the API key to connect other apps to Sonarr.">
+        <Card title="Security" description="How people sign in, and the API key other apps use to connect.">
+          <div className="mb-4 grid gap-4 sm:grid-cols-2">
+            <FormField
+              label="Authentication"
+              help={
+                draft.authenticationMethod === 'external'
+                  ? 'Only choose External when a reverse proxy already authenticates every request.'
+                  : 'Sign in with a username and password.'
+              }
+            >
+              <Select
+                value={draft.authenticationMethod}
+                onChange={(e) => set('authenticationMethod', e.target.value as Draft['authenticationMethod'])}
+                options={AUTH_METHODS}
+              />
+            </FormField>
+            <FormField
+              label="Authentication required"
+              help="Local addresses are only trusted when no proxy headers are present."
+            >
+              <Select
+                value={draft.authenticationRequired}
+                onChange={(e) => set('authenticationRequired', e.target.value as Draft['authenticationRequired'])}
+                options={AUTH_REQUIRED}
+              />
+            </FormField>
+            <FormField label="Username" error={field('username')}>
+              <Input autoComplete="username" value={draft.username} onChange={(e) => set('username', e.target.value)} />
+            </FormField>
+            <FormField label="Password" error={field('password')} help="Leave blank to keep the current password.">
+              <Input
+                type="password"
+                autoComplete="new-password"
+                value={draft.password}
+                onChange={(e) => set('password', e.target.value)}
+              />
+            </FormField>
+          </div>
           <FormField label="API key">
             <Input readOnly value={config.apiKey} className="font-mono" />
           </FormField>

@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
-import { Check, Laptop, Menu, Moon, Search, Sun } from 'lucide-react';
+import { Check, Laptop, LogOut, Menu, Moon, Search, Sun } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { useTheme, type ThemePreference } from '../../lib/theme';
 import { useConnectionStatus, type ConnectionStatus } from '../../lib/events';
+import { loadInitialize, logout, redirectToLogin, type InitializeConfig } from '../../lib/api';
 import { SIDEBAR_ID } from './Sidebar';
 
 export interface HeaderProps {
@@ -146,6 +147,40 @@ function ConnectionIndicator() {
   );
 }
 
+/** Signs out of a forms-auth session; hidden for external (proxy) authentication. */
+function LogoutButton() {
+  const [init, setInit] = useState<InitializeConfig | null>(null);
+  useEffect(() => {
+    let active = true;
+    loadInitialize().then(
+      (i) => active && setInit(i),
+      () => {},
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+  if (init?.authMethod !== 'forms') return null;
+  const onLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      redirectToLogin(init.urlBase);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={() => void onLogout()}
+      aria-label="Log out"
+      title="Log out"
+      className="focus-ring flex size-9 items-center justify-center rounded-md text-text-muted hover:bg-surface-hover hover:text-text"
+    >
+      <LogOut aria-hidden="true" className="size-5" />
+    </button>
+  );
+}
+
 export function Header({ mobileNavOpen, onOpenMobileNav, onOpenPalette }: HeaderProps) {
   return (
     <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-surface/80 px-4 backdrop-blur-md sm:px-6">
@@ -176,6 +211,7 @@ export function Header({ mobileNavOpen, onOpenMobileNav, onOpenPalette }: Header
       <div className="ml-auto flex items-center gap-2">
         <ConnectionIndicator />
         <ThemeMenu />
+        <LogoutButton />
       </div>
     </header>
   );

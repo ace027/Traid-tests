@@ -93,17 +93,64 @@ export type QualityProfileInput = z.infer<typeof qualityProfileInputSchema>;
 
 export const commandInputSchema = z.object({ name: z.string().min(1) }).catchall(z.unknown());
 
-export const hostConfigSchema = z.object({
+export const authenticationMethodSchema = z.enum(['forms', 'external']);
+export type AuthenticationMethod = z.infer<typeof authenticationMethodSchema>;
+export const authenticationRequiredSchema = z.enum(['enabled', 'disabledForLocalAddresses']);
+export type AuthenticationRequired = z.infer<typeof authenticationRequiredSchema>;
+
+const URL_BASE_CHARS = /^[A-Za-z0-9._~/-]*$/;
+
+/** Canonical URL base: leading '/', no trailing '/', no empty, '.' or '..' segments; '' when blank. */
+export function normalizeUrlBase(raw: string): string {
+  const segments = raw.trim().split('/').filter(Boolean);
+  return segments.length ? `/${segments.join('/')}` : '';
+}
+
+/** The single place a URL base is validated and normalized. */
+export const urlBaseSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .regex(URL_BASE_CHARS, 'URL base may only contain letters, digits and . _ ~ / -')
+  .refine((v) => !v.split('/').some((s) => s === '.' || s === '..'), "URL base may not contain '.' or '..' segments")
+  .transform(normalizeUrlBase);
+
+const hostConfigShape = {
   id: z.literal(1),
   bindAddress: z.string().min(1),
   port: z.number().int().min(1).max(65535),
-  urlBase: z.string(),
+  urlBase: urlBaseSchema,
   instanceName: z.string().min(1),
   apiKey: z.string().min(1),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error']),
   launchBrowser: z.literal(false),
-});
+  authenticationMethod: authenticationMethodSchema,
+  authenticationRequired: authenticationRequiredSchema,
+  username: z.string().trim().max(256),
+  /** Write-only: always '' when read; '' in an update means "unchanged". */
+  password: z.string().max(1024),
+};
+
+export const hostConfigSchema = z.object(hostConfigShape);
 export type HostConfig = z.infer<typeof hostConfigSchema>;
+
+/** Body of PUT /config/host: every field optional, no defaults (missing means unchanged). */
+export const hostConfigUpdateSchema = z.object(hostConfigShape).partial();
+
+/** Defaults applied to a stored host config (apiKey is generated separately). */
+export const HOST_CONFIG_DEFAULTS: Omit<HostConfig, 'apiKey'> = {
+  id: 1,
+  bindAddress: '*',
+  port: 8989,
+  urlBase: '',
+  instanceName: 'Sonarr',
+  logLevel: 'info',
+  launchBrowser: false,
+  authenticationMethod: 'forms',
+  authenticationRequired: 'enabled',
+  username: '',
+  password: '',
+};
 
 export const uiConfigSchema = z.object({
   id: z.literal(1),
@@ -146,7 +193,7 @@ export const systemStatusSchema = z.object({
   runtimeVersion: z.string(),
   databaseType: z.literal('sqlite'),
   databaseVersion: z.string(),
-  authentication: z.literal('none'),
+  authentication: authenticationMethodSchema,
   urlBase: z.string(),
   startTime: z.string(),
 });
