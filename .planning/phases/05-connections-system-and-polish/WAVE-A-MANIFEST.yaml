@@ -1,12 +1,12 @@
 wave: A
 phase: 5
-status: failed
-timestamp: "2026-10-13T04:01:48Z"
+status: complete
+timestamp: "2026-10-13T05:01:17Z"
 service_groups:
   mixed:
-    status: partial
+    status: complete
     plans: [05-01, 05-06]
-    files: [.gitignore, README.md, e2e/helpers.ts, e2e/smoke.spec.ts, package-lock.json, package.json, playwright.config.ts, server/src/e2e/start.ts]
+    files: []
   backend:
     status: complete
     plans: [05-02, 05-03]
@@ -15,3 +15,15 @@ service_groups:
     status: complete
     plans: [05-04, 05-05]
     files: []
+analysis_findings:
+  count: 8
+  by_agent:
+    engineering-backend-architect: {blockers: 0, warnings: 1}
+    engineering-security-engineer: {blockers: 1, warnings: 6}
+outputs:
+  total_files: 0
+  total_plans: 6
+  passed: 6
+  failed: 0
+gate: architecture
+gate_status: passed
